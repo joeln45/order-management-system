@@ -1,0 +1,70 @@
+# ============================================================
+# Order Management System — root .gitignore
+# Covers Java/Maven backend and Next.js frontend (added later)
+# ============================================================
+
+# --- Java / Maven build output ---
+**/target/
+*.jar
+*.war
+*.ear
+*.class
+hs_err_pid*
+replay_pid*
+
+# --- Node / Next.js (frontend, added in Phase 8) ---
+**/node_modules/
+**/.next/
+**/out/
+**/build/
+**/dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Environment & secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# --- IDE & editor ---
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.classpath
+.project
+.settings/
+.factorypath
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- OS ---
+desktop.ini
+
+# --- Coverage & test reports ---
+coverage/
+.nyc_output/
+**/jacoco.exec
+
+# --- Docker ---
+.dockerignore-compiled
+
+# --- Misc ---
+*.tmp
+*.bak

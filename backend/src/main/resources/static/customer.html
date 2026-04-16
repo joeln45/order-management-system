@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management System - Customer Interface</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .result {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .product-item {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .order-item {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .customer-box {
+            background-color: #e7f3ff;
+            border: 2px solid #007bff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .badge-pending {
+            background-color: #ffc107;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .badge-shipped {
+            background-color: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .badge-cancelled {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Order Management System - Customer Interface</h1>
+
+        <div class="customer-box">
+            <h3>Enter Your Customer Number</h3>
+            <div class="form-group">
+                <input type="text" class="form-control form-control-lg" id="customerNumber" 
+                       placeholder="Enter your customer number (e.g., CUST001)">
+                <small class="form-text text-muted">
+                    Test customers: CUST001 (Michelle James), CUST002 (Katelyn James), CUST003 (Steve Brown)
+                </small>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>1. Browse Products</h2>
+            <button class="btn btn-primary" onclick="viewAllProducts()">View All Products</button>
+            <div id="productsResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. Create New Order</h2>
+            
+            <div class="form-group">
+                <label for="orderProductId">Product ID:</label>
+                <input type="text" class="form-control" id="orderProductId" 
+                       placeholder="Copy product ID from above">
+            </div>
+            
+            <div class="form-group">
+                <label for="quantity">Quantity:</label>
+                <input type="number" class="form-control" id="quantity" min="1" value="1">
+            </div>
+            
+            <button class="btn btn-success" onclick="createOrder()">Create Order</button>
+            <div id="orderResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. View My Orders</h2>
+            <button class="btn btn-primary" onclick="viewMyOrders()">View My Orders</button>
+            <div id="myOrdersResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>4. Cancel Order</h2>
+            <div class="form-group">
+                <label for="cancelOrderId">Order ID:</label>
+                <input type="text" class="form-control" id="cancelOrderId" 
+                       placeholder="Enter order ID to cancel">
+            </div>
+            <button class="btn btn-danger" onclick="cancelOrder()">Cancel Order</button>
+            <div id="cancelResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+
+        function getCustomerNumber() {
+            const custNum = document.getElementById('customerNumber').value.trim();
+            if (!custNum) {
+                alert('Please enter your customer number first');
+                document.getElementById('customerNumber').focus();
+                return null;
+            }
+            return custNum;
+        }
+
+        async function viewAllProducts() {
+            const resultDiv = document.getElementById('productsResult');
+            resultDiv.innerHTML = '<p>Loading products...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/products`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch products');
+                }
+                
+                const data = await response.json();
+                
+                // Handle productList from Spring HATEOAS
+                const products = data._embedded?.productList || [];
+                
+                let html = '<div class="result"><h4>Available Products</h4>';
+                
+                if (products.length === 0) {
+                    html += '<p>No products available</p>';
+                } else {
+                    products.forEach(product => {
+                        html += `
+                            <div class="product-item">
+                                <strong>${product.description}</strong><br>
+                                <strong>Price:</strong> £${product.retailPrice.toFixed(2)}<br>
+                                <strong>Product ID:</strong> <code>${product.id}</code><br>
+                                <strong>Wholesaler ID:</strong> ${product.wholesalerId}
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += '</div>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function createOrder() {
+            const customerId = getCustomerNumber();
+            if (!customerId) return;
+            
+            const productId = document.getElementById('orderProductId').value.trim();
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const resultDiv = document.getElementById('orderResult');
+            
+            if (!productId) {
+                resultDiv.innerHTML = '<div class="error">Please enter a product ID</div>';
+                return;
+            }
+            
+            if (isNaN(quantity) || quantity < 1) {
+                resultDiv.innerHTML = '<div class="error">Please enter a valid quantity</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>Creating order...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        customerId: customerId,
+                        productId: productId,
+                        quantity: quantity
+                    })
+                });
+                
+                if (!response.ok) {
+                    let errorMessage = 'Failed to create order';
+                    
+                    try {
+                        const errorData = await response.json();
+                        console.log('Error response:', errorData);
+                        // Spring Boot puts the custom message in the "message" field
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    } catch (e) {
+                        // Fallback to text
+                        const errorText = await response.text();
+                        console.log('Error text:', errorText);
+                        errorMessage = errorText || errorMessage;
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+                const order = await response.json();
+                
+                let html = '<div class="result"><h4>Order Created Successfully</h4>';
+                html += `
+                    <p><strong>Order ID:</strong> <code>${order.id}</code></p>
+                    <p><strong>Customer:</strong> ${order.customerId}</p>
+                    <p><strong>Product:</strong> ${order.productId}</p>
+                    <p><strong>Quantity:</strong> ${order.quantity}</p>
+                    <p><strong>Status:</strong> <span class="badge-pending">${order.status}</span></p>
+                    <p><strong>Date:</strong> ${new Date(order.orderDate).toLocaleString()}</p>
+                `;
+                html += '</div>';
+                resultDiv.innerHTML = html;
+                
+                document.getElementById('orderProductId').value = '';
+                document.getElementById('quantity').value = '1';
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error"><strong>Failed to create order:</strong><br>${error.message}</div>`;
+            }
+        }
+
+        async function viewMyOrders() {
+            const customerId = getCustomerNumber();
+            if (!customerId) return;
+            
+            const resultDiv = document.getElementById('myOrdersResult');
+            resultDiv.innerHTML = '<p>Loading your orders...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/customers/${customerId}/orders`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch orders');
+                }
+                
+                const data = await response.json();
+                const orders = data._embedded?.orderList || data._embedded?.orders || [];
+                
+                let html = '<div class="result"><h4>Your Orders</h4>';
+                
+                if (orders.length === 0) {
+                    html += '<p>You have no orders yet</p>';
+                } else {
+                    orders.forEach(order => {
+                        const statusClass = order.status.toLowerCase();
+                        html += `
+                            <div class="order-item">
+                                <strong>Order ID:</strong> <code>${order.id}</code><br>
+                                <strong>Product:</strong> ${order.productId}<br>
+                                <strong>Quantity:</strong> ${order.quantity}<br>
+                                <strong>Status:</strong> <span class="badge-${statusClass}">${order.status}</span><br>
+                                <strong>Date:</strong> ${new Date(order.orderDate).toLocaleString()}
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += '</div>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function cancelOrder() {
+            const customerId = getCustomerNumber();
+            if (!customerId) return;
+            
+            const orderId = document.getElementById('cancelOrderId').value.trim();
+            const resultDiv = document.getElementById('cancelResult');
+            
+            if (!orderId) {
+                resultDiv.innerHTML = '<div class="error">Please enter an order ID</div>';
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to cancel this order?')) {
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>Cancelling order...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/orders/${orderId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Failed to cancel order');
+                }
+                
+                resultDiv.innerHTML = '<div class="result"><h4>Order Cancelled Successfully</h4></div>';
+                document.getElementById('cancelOrderId').value = '';
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Failed to cancel order: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

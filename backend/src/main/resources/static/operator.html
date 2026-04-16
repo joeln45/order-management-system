@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management System - Operator Interface</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #dc3545;
+            border-bottom: 2px solid #dc3545;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .result {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .order-item {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .badge-pending {
+            background-color: #ffc107;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .badge-shipped {
+            background-color: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .badge-cancelled {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .badge-out_of_stock {
+            background-color: #6c757d;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .login-container {
+            max-width: 500px;
+            margin: 100px auto;
+        }
+        .hidden {
+            display: none;
+        }
+        .user-info {
+            background-color: #e7f3ff;
+            border: 2px solid #007bff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .alert-warning {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Login Section -->
+        <div id="loginSection" class="login-container">
+            <div class="section">
+                <h2 class="text-center">Operator Login</h2>
+                <p class="text-center text-muted">Please authenticate to access operator functions</p>
+                
+                <form id="loginForm" onsubmit="login(event)">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-block">Login</button>
+                </form>
+                
+                <div id="loginError"></div>
+                
+                <div class="mt-4 p-3 bg-light border rounded">
+                    <small class="text-muted">
+                        <strong>Demo Credentials:</strong><br>
+                        Username: <code>operator</code><br>
+                        Password: <code>password123</code>
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Operator Interface (Hidden during login time) -->
+        <div id="operatorSection" class="hidden">
+            <h1 class="text-center mb-4">Order Management System - Operator Interface</h1>
+            
+            <!-- User Info Bar -->
+            <div class="user-info">
+                <div>
+                    <strong>Logged in as:</strong> <span id="currentUser"></span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="logout()">Logout</button>
+            </div>
+
+            <!-- View All Orders -->
+            <div class="section">
+                <h2>1. View All Orders</h2>
+                <button class="btn btn-danger" onclick="viewAllOrders()">View All Orders</button>
+                <div id="ordersResult"></div>
+            </div>
+
+            <!-- Update Order Status -->
+            <div class="section">
+                <h2>2. Update Order Status</h2>
+                
+                <div class="form-group">
+                    <label for="updateOrderId">Order ID:</label>
+                    <input type="text" class="form-control" id="updateOrderId" 
+                           placeholder="Enter order ID">
+                </div>
+                
+                <div class="form-group">
+                    <label for="newStatus">New Status:</label>
+                    <select class="form-control" id="newStatus">
+                        <option value="SHIPPED">SHIPPED</option>
+                        <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
+                    </select>
+                    <small class="form-text text-muted">
+                        Operators can mark orders as shipped or out of stock. 
+                        Customers can cancel their own orders.
+                    </small>
+                </div>
+                
+                <button class="btn btn-danger" onclick="updateOrderStatus()">Update Status</button>
+                <div id="updateStatusResult"></div>
+            </div>
+
+            <!-- Update Product Price -->
+            <div class="section">
+                <h2>3. Update Product Price</h2>
+                
+                <div class="form-group">
+                    <label for="updateProductId">Product ID:</label>
+                    <input type="text" class="form-control" id="updateProductId" 
+                           placeholder="Enter product ID">
+                </div>
+                
+                <div class="form-group">
+                    <label for="newPrice">New Retail Price (£):</label>
+                    <input type="number" step="0.01" class="form-control" id="newPrice" 
+                           placeholder="Enter new price">
+                </div>
+                
+                <button class="btn btn-danger" onclick="updateProductPrice()">Update Price</button>
+                <div id="updatePriceResult"></div>
+            </div>
+
+            <!-- View Customer Revenue -->
+            <div class="section">
+                <h2>4. View Customer Revenue</h2>
+                
+                <div class="form-group">
+                    <label for="revenueCustomerId">Customer ID:</label>
+                    <input type="text" class="form-control" id="revenueCustomerId" 
+                           placeholder="Enter customer ID (e.g., CUST001)">
+                </div>
+                
+                <button class="btn btn-danger" onclick="viewCustomerRevenue()">View Revenue</button>
+                <div id="revenueResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let jwtToken = null;
+        let currentUsername = null;
+
+        // Check if already logged in
+        window.onload = function() {
+            const savedToken = localStorage.getItem('operatorToken');
+            const savedUsername = localStorage.getItem('operatorUsername');
+            
+            if (savedToken && savedUsername) {
+                jwtToken = savedToken;
+                currentUsername = savedUsername;
+                showOperatorInterface();
+            }
+        };
+
+        // Login function
+        async function login(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            errorDiv.innerHTML = '<p>Authenticating...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/operator/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Login failed');
+                }
+                
+                const data = await response.json();
+                jwtToken = data.token;
+                currentUsername = username;
+                
+                // Save to localStorage
+                localStorage.setItem('operatorToken', jwtToken);
+                localStorage.setItem('operatorUsername', currentUsername);
+                
+                showOperatorInterface();
+                
+            } catch (error) {
+                errorDiv.innerHTML = `<div class="error">Login failed: ${error.message}</div>`;
+            }
+        }
+
+        // logout function
+        function logout() {
+            jwtToken = null;
+            currentUsername = null;
+            localStorage.removeItem('operatorToken');
+            localStorage.removeItem('operatorUsername');
+            
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('operatorSection').classList.add('hidden');
+            
+            // Clear login form
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginError').innerHTML = '';
+        }
+
+        // show operator interface
+        function showOperatorInterface() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('operatorSection').classList.remove('hidden');
+            document.getElementById('currentUser').textContent = currentUsername;
+        }
+
+        // Helper function to make authenticated requests
+        async function authenticatedFetch(url, options = {}) {
+            if (!jwtToken) {
+                throw new Error('Not authenticated');
+            }
+            
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${jwtToken}`
+            };
+            
+            const response = await fetch(url, options);
+            
+            // If unauthorized, logout
+            if (response.status === 401) {
+                alert('Session expired. Please login again.');
+                logout();
+                throw new Error('Session expired');
+            }
+            
+            return response;
+        }
+
+        //View All Orders
+        async function viewAllOrders() {
+            const resultDiv = document.getElementById('ordersResult');
+            resultDiv.innerHTML = '<p>Loading orders...</p>';
+            
+            try {
+                const response = await authenticatedFetch(`${API_BASE}/operator/orders`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch orders');
+                }
+                
+                const data = await response.json();
+                const orders = data._embedded?.orderList || data._embedded?.orders || [];
+                
+                let html = '<div class="result"><h4>All Orders</h4>';
+                
+                if (orders.length === 0) {
+                    html += '<p>No orders found</p>';
+                } else {
+                    orders.forEach(order => {
+                        const statusClass = order.status.toLowerCase();
+                        html += `
+                            <div class="order-item">
+                                <strong>Order ID:</strong> <code>${order.id}</code><br>
+                                <strong>Customer:</strong> ${order.customerId}<br>
+                                <strong>Product:</strong> ${order.productId}<br>
+                                <strong>Quantity:</strong> ${order.quantity}<br>
+                                <strong>Status:</strong> <span class="badge-${statusClass}">${order.status}</span><br>
+                                <strong>Date:</strong> ${new Date(order.orderDate).toLocaleString()}
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += '</div>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Update Order Status
+        async function updateOrderStatus() {
+            const orderId = document.getElementById('updateOrderId').value.trim();
+            const newStatus = document.getElementById('newStatus').value;
+            const resultDiv = document.getElementById('updateStatusResult');
+            
+            if (!orderId) {
+                resultDiv.innerHTML = '<div class="error">Please enter an order ID</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>Updating status...</p>';
+            
+            try {
+                const response = await authenticatedFetch(
+                    `${API_BASE}/operator/orders/${orderId}/status`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: newStatus
+                        })
+                    }
+                );
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Failed to update status');
+                }
+                
+                resultDiv.innerHTML = `<div class="result">Status updated successfully to ${newStatus}</div>`;
+                document.getElementById('updateOrderId').value = '';
+                
+                // Auto-refresh orders list
+                viewAllOrders();
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Update Product Price
+        async function updateProductPrice() {
+            const productId = document.getElementById('updateProductId').value.trim();
+            const newPrice = parseFloat(document.getElementById('newPrice').value);
+            const resultDiv = document.getElementById('updatePriceResult');
+            
+            if (!productId) {
+                resultDiv.innerHTML = '<div class="error">Please enter a product ID</div>';
+                return;
+            }
+            
+            if (isNaN(newPrice) || newPrice <= 0) {
+                resultDiv.innerHTML = '<div class="error">Please enter a valid price</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>Updating price...</p>';
+            
+            try {
+                const response = await authenticatedFetch(
+                    `${API_BASE}/operator/products/${productId}/price`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            retailPrice: newPrice
+                        })
+                    }
+                );
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Failed to update price');
+                }
+                
+                resultDiv.innerHTML = `<div class="result">Price updated successfully to £${newPrice.toFixed(2)}</div>`;
+                document.getElementById('updateProductId').value = '';
+                document.getElementById('newPrice').value = '';
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // View Customer Revenue
+        async function viewCustomerRevenue() {
+            const customerId = document.getElementById('revenueCustomerId').value.trim();
+            const resultDiv = document.getElementById('revenueResult');
+            
+            if (!customerId) {
+                resultDiv.innerHTML = '<div class="error">Please enter a customer ID</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>Calculating revenue...</p>';
+            
+            try {
+                const response = await authenticatedFetch(
+                    `${API_BASE}/operator/customers/${customerId}/revenue`
+                );
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Failed to fetch revenue');
+                }
+                
+                const data = await response.json();
+                console.log('Revenue response:', data);
+                
+                // Handle different response formats 
+                let revenue, customerName;
+                
+                if (data.totalRevenue !== undefined) {
+                    revenue = data.totalRevenue;
+                    customerName = data.customerName;
+                } else if (data.revenue !== undefined) {
+                    revenue = data.revenue;
+                    customerName = data.customerName;
+                } else {
+                    throw new Error('Invalid response format');
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="result">
+                        <h4>Customer Revenue</h4>
+                        <p><strong>Customer ID:</strong> ${customerId}</p>
+                        <p><strong>Customer Name:</strong> ${customerName}</p>
+                        <p><strong>Total Revenue:</strong> £${revenue.toFixed(2)}</p>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Revenue error:', error);
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
