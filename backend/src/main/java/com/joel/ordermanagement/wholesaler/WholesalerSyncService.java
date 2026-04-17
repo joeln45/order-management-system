@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +32,7 @@ import java.util.Map;
 public class WholesalerSyncService {
 
     /** 30 % markup applied to wholesale price when computing our retail price. */
-    private static final double MARKUP_MULTIPLIER = 1.30;
+    private static final BigDecimal MARKUP_MULTIPLIER = new BigDecimal("1.30");
 
     @Value("${wholesaler.base-url}")
     private String wholesalerBaseUrl;
@@ -139,8 +141,9 @@ public class WholesalerSyncService {
             return false;
         }
 
-        double wholesalePrice = ((Number) priceObj).doubleValue();
-        double retailPrice = Math.round(wholesalePrice * MARKUP_MULTIPLIER * 100.0) / 100.0;
+        BigDecimal wholesalePrice = BigDecimal.valueOf(((Number) priceObj).doubleValue());
+        BigDecimal retailPrice = wholesalePrice.multiply(MARKUP_MULTIPLIER)
+                .setScale(2, RoundingMode.HALF_UP);
 
         productRepository.save(new Product(description, retailPrice, wholesalerId));
         log.info("Added '{}' (wholesale £{} → retail £{})", description, wholesalePrice, retailPrice);

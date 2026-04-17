@@ -2,25 +2,16 @@ spring:
   application:
     name: order-management
 
-  datasource:
-    url: jdbc:h2:mem:ordermanagement
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+  # 'dev' is the default profile when none is specified.
+  # Activate explicitly with: --spring.profiles.active=prod
+  profiles:
+    default: dev
 
   jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: false
-    open-in-view: false        # disables anti-pattern that warns at startup
+    open-in-view: false        # disables the anti-pattern that warns at startup
     properties:
       hibernate:
-        format_sql: false
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+        format_sql: true
 
 server:
   port: 8080
@@ -32,7 +23,6 @@ logging:
     org.springframework.boot: INFO
     com.joel.ordermanagement: INFO
     org.hibernate: WARN
-    org.hibernate.SQL: 'OFF'
 
 # --------------------------------------------------------------
 # Application-specific config (read with @Value or @ConfigurationProperties)

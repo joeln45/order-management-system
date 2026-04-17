@@ -9,6 +9,10 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, String> {
 
-    /** Derived query: Spring auto-implements {@code WHERE customer_id = ?}. */
-    List<Order> findByCustomerId(String customerId);
+    /**
+     * Derived query that traverses the {@code customer} relationship.
+     * Underscore tells Spring Data to navigate {@code order.customer.id} →
+     * generated SQL: {@code WHERE customer_id = ?}.
+     */
+    List<Order> findByCustomer_Id(String customerId);
 }

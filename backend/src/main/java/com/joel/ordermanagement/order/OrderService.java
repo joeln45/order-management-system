@@ -1,5 +1,6 @@
 package com.joel.ordermanagement.order;
 
+import com.joel.ordermanagement.customer.Customer;
 import com.joel.ordermanagement.customer.CustomerRepository;
 import com.joel.ordermanagement.product.Product;
 import com.joel.ordermanagement.product.ProductRepository;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -26,9 +28,9 @@ public class OrderService {
 
     /** Create a new order after validating customer, product, stock and profitability. */
     public Order createOrder(String customerId, String productId, int quantity) {
-        if (!customerRepository.existsById(customerId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found: " + customerId);
-        }
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Customer not found: " + customerId));
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -44,7 +46,7 @@ public class OrderService {
                     "Cannot create order — retail price too low to be profitable");
         }
 
-        return orderRepository.save(new Order(customerId, productId, quantity));
+        return orderRepository.save(new Order(customer, product, quantity));
     }
 
     /** Get a single order or 404. */
@@ -59,7 +61,7 @@ public class OrderService {
         if (!customerRepository.existsById(customerId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found: " + customerId);
         }
-        return orderRepository.findByCustomerId(customerId);
+        return orderRepository.findByCustomer_Id(customerId);
     }
 
     /** Cancel an order. Only permitted while still {@link OrderStatus#PENDING}. */
@@ -87,18 +89,17 @@ public class OrderService {
 
     /**
      * Sum {@code retailPrice * quantity} across a customer's non-cancelled orders.
-     * Phase 3 will switch this to use the order's price snapshot.
+     * Phase 3 will switch this to use the order's price snapshot (per-line total).
      */
-    public double calculateCustomerRevenue(String customerId) {
+    public BigDecimal calculateCustomerRevenue(String customerId) {
         if (!customerRepository.existsById(customerId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found: " + customerId);
         }
 
-        return orderRepository.findByCustomerId(customerId).stream()
+        return orderRepository.findByCustomer_Id(customerId).stream()
                 .filter(order -> order.getStatus() != OrderStatus.CANCELLED)
-                .mapToDouble(order -> productRepository.findById(order.getProductId())
-                        .map(p -> p.getRetailPrice() * order.getQuantity())
-                        .orElse(0.0))
-                .sum();
+                .map(order -> order.getProduct().getRetailPrice()
+                        .multiply(BigDecimal.valueOf(order.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

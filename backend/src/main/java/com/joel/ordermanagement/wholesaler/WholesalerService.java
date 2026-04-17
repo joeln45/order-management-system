@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -45,18 +46,18 @@ public class WholesalerService {
     }
 
     /** True iff retail price strictly exceeds the wholesaler's current price. */
-    public boolean isProfitable(String wholesalerId, double retailPrice) {
-        Map<String, Object> product = getWholesalerProduct(wholesalerId);
-        if (product == null) {
-            return false;
-        }
-        Double wholesalePrice = (Double) product.get("price");
-        return wholesalePrice != null && retailPrice > wholesalePrice;
+    public boolean isProfitable(String wholesalerId, BigDecimal retailPrice) {
+        BigDecimal wholesalePrice = getWholesalePrice(wholesalerId);
+        return wholesalePrice != null && retailPrice.compareTo(wholesalePrice) > 0;
     }
 
     /** Current wholesale price for a product, or {@code null} if unknown. */
-    public Double getWholesalePrice(String wholesalerId) {
+    public BigDecimal getWholesalePrice(String wholesalerId) {
         Map<String, Object> product = getWholesalerProduct(wholesalerId);
-        return product == null ? null : (Double) product.get("price");
+        if (product == null) {
+            return null;
+        }
+        Object priceObj = product.get("price");
+        return priceObj == null ? null : BigDecimal.valueOf(((Number) priceObj).doubleValue());
     }
 }

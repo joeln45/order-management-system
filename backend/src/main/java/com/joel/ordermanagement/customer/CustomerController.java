@@ -1,6 +1,7 @@
 package com.joel.ordermanagement.customer;
 
 import com.joel.ordermanagement.order.Order;
+import com.joel.ordermanagement.order.OrderResponse;
 import com.joel.ordermanagement.order.OrderService;
 import com.joel.ordermanagement.order.OrderStatus;
 import com.joel.ordermanagement.product.Product;
@@ -78,7 +79,7 @@ public class CustomerController {
 
     /** POST /orders — place a new order; validates customer, product, stock, profitability. */
     @PostMapping("/orders")
-    public ResponseEntity<EntityModel<Order>> createOrder(@RequestBody OrderRequest request) {
+    public ResponseEntity<EntityModel<OrderResponse>> createOrder(@RequestBody OrderRequest request) {
         if (request == null || request.getCustomerId() == null
                 || request.getProductId() == null || request.getQuantity() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -88,58 +89,26 @@ public class CustomerController {
         Order order = orderService.createOrder(
                 request.getCustomerId(), request.getProductId(), request.getQuantity());
 
-        EntityModel<Order> model = EntityModel.of(order);
-        model.add(linkTo(methodOn(CustomerController.class).getOrder(order.getId())).withSelfRel());
-        model.add(linkTo(methodOn(CustomerController.class).getCustomerOrders(order.getCustomerId()))
-                .withRel("customer-orders"));
-        model.add(linkTo(methodOn(CustomerController.class).getProduct(order.getProductId()))
-                .withRel("product"));
-        model.add(linkTo(methodOn(CustomerController.class).cancelOrder(order.getId()))
-                .withRel("cancel"));
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(model);
+        return ResponseEntity.status(HttpStatus.CREATED).body(toModel(order));
     }
 
     /** GET /orders/{id} — single order; cancel link only present when status is PENDING. */
     @GetMapping("/orders/{id}")
-    public ResponseEntity<EntityModel<Order>> getOrder(@PathVariable String id) {
+    public ResponseEntity<EntityModel<OrderResponse>> getOrder(@PathVariable String id) {
         Order order = orderService.getOrder(id);
-
-        EntityModel<Order> model = EntityModel.of(order);
-        model.add(linkTo(methodOn(CustomerController.class).getOrder(id)).withSelfRel());
-        model.add(linkTo(methodOn(CustomerController.class).getProduct(order.getProductId()))
-                .withRel("product"));
-        model.add(linkTo(methodOn(CustomerController.class).getCustomer(order.getCustomerId()))
-                .withRel("customer"));
-        model.add(linkTo(methodOn(CustomerController.class).getCustomerOrders(order.getCustomerId()))
-                .withRel("customer-orders"));
-
-        if (order.getStatus() == OrderStatus.PENDING) {
-            model.add(linkTo(methodOn(CustomerController.class).cancelOrder(id)).withRel("cancel"));
-        }
-        return ResponseEntity.ok(model);
+        return ResponseEntity.ok(toModel(order));
     }
 
     /** GET /customers/{customerId}/orders — list a customer's orders. */
     @GetMapping("/customers/{customerId}/orders")
-    public ResponseEntity<CollectionModel<EntityModel<Order>>> getCustomerOrders(
+    public ResponseEntity<CollectionModel<EntityModel<OrderResponse>>> getCustomerOrders(
             @PathVariable String customerId) {
 
-        List<EntityModel<Order>> orderModels = orderService.getOrdersByCustomer(customerId).stream()
-                .map(order -> {
-                    EntityModel<Order> model = EntityModel.of(order);
-                    model.add(linkTo(methodOn(CustomerController.class).getOrder(order.getId())).withSelfRel());
-                    model.add(linkTo(methodOn(CustomerController.class).getProduct(order.getProductId()))
-                            .withRel("product"));
-                    if (order.getStatus() == OrderStatus.PENDING) {
-                        model.add(linkTo(methodOn(CustomerController.class).cancelOrder(order.getId()))
-                                .withRel("cancel"));
-                    }
-                    return model;
-                })
+        List<EntityModel<OrderResponse>> orderModels = orderService.getOrdersByCustomer(customerId).stream()
+                .map(this::toModel)
                 .collect(Collectors.toList());
 
-        CollectionModel<EntityModel<Order>> collection = CollectionModel.of(orderModels);
+        CollectionModel<EntityModel<OrderResponse>> collection = CollectionModel.of(orderModels);
         collection.add(linkTo(methodOn(CustomerController.class).getCustomerOrders(customerId)).withSelfRel());
         collection.add(linkTo(methodOn(CustomerController.class).getCustomer(customerId)).withRel("customer"));
 
@@ -169,6 +138,25 @@ public class CustomerController {
         model.add(linkTo(methodOn(CustomerController.class).getAllProducts()).withRel("products"));
 
         return ResponseEntity.ok(model);
+    }
+
+    // ------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------
+
+    /** Wrap an {@link Order} in an {@link OrderResponse} EntityModel with HATEOAS links. */
+    private EntityModel<OrderResponse> toModel(Order order) {
+        OrderResponse body = OrderResponse.from(order);
+        EntityModel<OrderResponse> model = EntityModel.of(body);
+        model.add(linkTo(methodOn(CustomerController.class).getOrder(body.getId())).withSelfRel());
+        model.add(linkTo(methodOn(CustomerController.class).getProduct(body.getProductId())).withRel("product"));
+        model.add(linkTo(methodOn(CustomerController.class).getCustomer(body.getCustomerId())).withRel("customer"));
+        model.add(linkTo(methodOn(CustomerController.class).getCustomerOrders(body.getCustomerId()))
+                .withRel("customer-orders"));
+        if (body.getStatus() == OrderStatus.PENDING) {
+            model.add(linkTo(methodOn(CustomerController.class).cancelOrder(body.getId())).withRel("cancel"));
+        }
+        return model;
     }
 
     // ------------------------------------------------------------

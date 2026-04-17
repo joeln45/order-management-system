@@ -8,6 +8,7 @@ import com.auth0.jwt.interfaces.JWTVerifier;
 import com.joel.ordermanagement.customer.Customer;
 import com.joel.ordermanagement.customer.CustomerRepository;
 import com.joel.ordermanagement.order.Order;
+import com.joel.ordermanagement.order.OrderResponse;
 import com.joel.ordermanagement.order.OrderService;
 import com.joel.ordermanagement.order.OrderStatus;
 import com.joel.ordermanagement.product.Product;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -127,24 +129,23 @@ public class OperatorController {
 
     /** GET /operator/orders — all orders with HATEOAS links. */
     @GetMapping("/orders")
-    public ResponseEntity<CollectionModel<EntityModel<Order>>> getAllOrders(
+    public ResponseEntity<CollectionModel<EntityModel<OrderResponse>>> getAllOrders(
             @RequestHeader("Authorization") String authHeader) {
         verifyOperatorToken(authHeader);
 
-        List<EntityModel<Order>> orderModels = orderService.getAllOrders().stream()
+        List<EntityModel<OrderResponse>> orderModels = orderService.getAllOrders().stream()
                 .map(order -> {
-                    EntityModel<Order> model = EntityModel.of(order);
+                    OrderResponse body = OrderResponse.from(order);
+                    EntityModel<OrderResponse> model = EntityModel.of(body);
                     model.add(linkTo(methodOn(OperatorController.class)
-                            .getAllOrders(authHeader)).withSelfRel());
+                            .updateOrderStatus(authHeader, body.getId(), null)).withRel("update-status"));
                     model.add(linkTo(methodOn(OperatorController.class)
-                            .updateOrderStatus(authHeader, order.getId(), null)).withRel("update-status"));
-                    model.add(linkTo(methodOn(OperatorController.class)
-                            .getCustomerRevenue(authHeader, order.getCustomerId())).withRel("customer-revenue"));
+                            .getCustomerRevenue(authHeader, body.getCustomerId())).withRel("customer-revenue"));
                     return model;
                 })
                 .collect(Collectors.toList());
 
-        CollectionModel<EntityModel<Order>> collection = CollectionModel.of(orderModels);
+        CollectionModel<EntityModel<OrderResponse>> collection = CollectionModel.of(orderModels);
         collection.add(linkTo(methodOn(OperatorController.class).getAllOrders(authHeader)).withSelfRel());
         return ResponseEntity.ok(collection);
     }
@@ -202,7 +203,7 @@ public class OperatorController {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
 
-        double revenue = orderService.calculateCustomerRevenue(id);
+        BigDecimal revenue = orderService.calculateCustomerRevenue(id);
         return ResponseEntity.ok(new RevenueResponse(id, customer.getName(), revenue));
     }
 
@@ -223,7 +224,7 @@ public class OperatorController {
 
     @Data
     public static class PriceUpdate {
-        private Double retailPrice;
+        private BigDecimal retailPrice;
     }
 
     @Data
@@ -232,6 +233,6 @@ public class OperatorController {
     public static class RevenueResponse {
         private String customerId;
         private String customerName;
-        private double totalRevenue;
+        private BigDecimal totalRevenue;
     }
 }
