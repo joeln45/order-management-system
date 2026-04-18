@@ -29,3 +29,31 @@ logging:
 # --------------------------------------------------------------
 wholesaler:
   base-url: https://pmaier.eu.pythonanywhere.com/wss
+  connect-timeout: PT2S     # TCP handshake budget
+  response-timeout: PT5S    # HTTP response budget
+  retry:
+    max-attempts: 3
+    initial-backoff: PT0.5S
+    max-backoff: PT2S
+
+# --------------------------------------------------------------
+# Authentication
+#
+# `secret` must be at least 32 chars (HMAC-SHA256 requires a 256-bit key).
+# The default here is fine for dev; production MUST override via the
+# APP_JWT_SECRET env var (docker-compose/CI).
+# --------------------------------------------------------------
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:dev-only-secret-change-me-at-least-32-characters-long-please}
+    access-token-ttl: PT15M    # ISO-8601 duration → 15 minutes
+    refresh-token-ttl: P7D     # 7 days
+    issuer: order-management
+
+  # Seeded credentials for local dev only; production disables the seeder.
+  seed:
+    enabled: true
+    operator-username: operator
+    operator-password: password123
+    demo-customer-username: customer
+    demo-customer-password: password123

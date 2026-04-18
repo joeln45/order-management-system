@@ -2,20 +2,26 @@ package com.joel.ordermanagement.order;
 
 import com.joel.ordermanagement.customer.Customer;
 import com.joel.ordermanagement.customer.CustomerRepository;
+import com.joel.ordermanagement.exception.BusinessRuleException;
+import com.joel.ordermanagement.exception.NotFoundException;
 import com.joel.ordermanagement.product.Product;
 import com.joel.ordermanagement.product.ProductRepository;
 import com.joel.ordermanagement.wholesaler.WholesalerService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Business logic for orders: creation (with stock + profitability checks),
- * cancellation, status transitions, and customer revenue calculation.
+ * Business logic for orders: multi-item creation (with per-line stock +
+ * profitability checks), cancellation, status transitions, and revenue
+ * calculation from historical line-item prices.
+ * <p>
+ * Throws transport-agnostic domain exceptions ({@link NotFoundException},
+ * {@link BusinessRuleException}); the HTTP status code translation happens
+ * in {@link com.joel.ordermanagement.exception.GlobalExceptionHandler}.
  */
 @Service
 @RequiredArgsConstructor
@@ -26,80 +32,93 @@ public class OrderService {
     private final CustomerRepository customerRepository;
     private final WholesalerService wholesalerService;
 
-    /** Create a new order after validating customer, product, stock and profitability. */
-    public Order createOrder(String customerId, String productId, int quantity) {
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Customer not found: " + customerId));
-
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Product not found: " + productId));
-
-        if (!wholesalerService.hasStock(product.getWholesalerId(), quantity)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Insufficient stock available from wholesaler");
+    @Transactional
+    public Order createOrder(CreateOrderRequest request) {
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new BusinessRuleException("Order must contain at least one item");
         }
 
-        if (!wholesalerService.isProfitable(product.getWholesalerId(), product.getRetailPrice())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Cannot create order — retail price too low to be profitable");
+        Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> NotFoundException.of("Customer", request.getCustomerId()));
+
+        Order order = new Order(customer);
+
+        for (CreateOrderRequest.LineItem line : request.getItems()) {
+            if (line.getProductId() == null || line.getQuantity() == null || line.getQuantity() <= 0) {
+                throw new BusinessRuleException("Each item must have a productId and a positive quantity");
+            }
+
+            Product product = productRepository.findById(line.getProductId())
+                    .orElseThrow(() -> NotFoundException.of("Product", line.getProductId()));
+
+            if (!wholesalerService.hasStock(product.getWholesalerId(), line.getQuantity())) {
+                throw new BusinessRuleException(
+                        "Insufficient stock for product: " + product.getDescription());
+            }
+
+            if (!wholesalerService.isProfitable(product.getWholesalerId(), product.getRetailPrice())) {
+                throw new BusinessRuleException(
+                        "Cannot sell " + product.getDescription() + " — retail price not profitable");
+            }
+
+            order.addItem(new OrderItem(product, line.getQuantity(), product.getRetailPrice()));
         }
 
-        return orderRepository.save(new Order(customer, product, quantity));
+        return orderRepository.save(order);
     }
 
-    /** Get a single order or 404. */
+    @Transactional(readOnly = true)
     public Order getOrder(String orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Order not found: " + orderId));
+                .orElseThrow(() -> NotFoundException.of("Order", orderId));
     }
 
-    /** All orders for a given customer (after validating the customer exists). */
+    @Transactional(readOnly = true)
     public List<Order> getOrdersByCustomer(String customerId) {
         if (!customerRepository.existsById(customerId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found: " + customerId);
+            throw NotFoundException.of("Customer", customerId);
         }
         return orderRepository.findByCustomer_Id(customerId);
     }
 
-    /** Cancel an order. Only permitted while still {@link OrderStatus#PENDING}. */
+    @Transactional
     public void cancelOrder(String orderId) {
-        Order order = getOrder(orderId);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> NotFoundException.of("Order", orderId));
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Cannot cancel order — status is " + order.getStatus());
+            throw new BusinessRuleException("Cannot cancel order — status is " + order.getStatus());
         }
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
     }
 
-    /** All orders in the system (operator view). */
+    @Transactional(readOnly = true)
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
 
-    /** Transition order to a new status (operator action). */
+    @Transactional
     public void updateOrderStatus(String orderId, OrderStatus newStatus) {
-        Order order = getOrder(orderId);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> NotFoundException.of("Order", orderId));
         order.setStatus(newStatus);
         orderRepository.save(order);
     }
 
     /**
-     * Sum {@code retailPrice * quantity} across a customer's non-cancelled orders.
-     * Phase 3 will switch this to use the order's price snapshot (per-line total).
+     * Total revenue from a customer = sum of line totals across all of their
+     * non-cancelled orders, using the {@code priceAtPurchase} snapshot on each
+     * line. Later product price edits do not retroactively change this figure.
      */
+    @Transactional(readOnly = true)
     public BigDecimal calculateCustomerRevenue(String customerId) {
         if (!customerRepository.existsById(customerId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found: " + customerId);
+            throw NotFoundException.of("Customer", customerId);
         }
 
         return orderRepository.findByCustomer_Id(customerId).stream()
                 .filter(order -> order.getStatus() != OrderStatus.CANCELLED)
-                .map(order -> order.getProduct().getRetailPrice()
-                        .multiply(BigDecimal.valueOf(order.getQuantity())))
+                .map(Order::total)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

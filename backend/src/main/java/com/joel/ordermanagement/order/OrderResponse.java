@@ -4,15 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * API response shape for an Order.
- * <p>
- * The internal {@link Order} entity now holds nested {@code Customer} and
- * {@code Product} objects (real JPA relationships). This DTO flattens those
- * back to {@code customerId} / {@code productId} strings so the public JSON
- * contract stays stable across the persistence overhaul.
+ * Public API shape for an Order — flattens the JPA entity graph into
+ * a stable JSON contract with nested line items and a computed total.
  */
 @Data
 @NoArgsConstructor
@@ -21,18 +20,21 @@ public class OrderResponse {
 
     private String id;
     private String customerId;
-    private String productId;
-    private Integer quantity;
+    private List<OrderItemResponse> items;
+    private BigDecimal total;
     private OrderStatus status;
     private LocalDateTime orderDate;
 
-    /** Map a persistence entity into its public API shape. */
     public static OrderResponse from(Order order) {
+        List<OrderItemResponse> items = order.getItems().stream()
+                .map(OrderItemResponse::from)
+                .collect(Collectors.toList());
+
         return new OrderResponse(
                 order.getId(),
                 order.getCustomer().getId(),
-                order.getProduct().getId(),
-                order.getQuantity(),
+                items,
+                order.total(),
                 order.getStatus(),
                 order.getOrderDate()
         );

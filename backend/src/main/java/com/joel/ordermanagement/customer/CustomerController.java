@@ -1,15 +1,18 @@
 package com.joel.ordermanagement.customer;
 
+import com.joel.ordermanagement.order.CreateOrderRequest;
 import com.joel.ordermanagement.order.Order;
 import com.joel.ordermanagement.order.OrderResponse;
 import com.joel.ordermanagement.order.OrderService;
 import com.joel.ordermanagement.order.OrderStatus;
 import com.joel.ordermanagement.product.Product;
 import com.joel.ordermanagement.product.ProductRepository;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import com.joel.ordermanagement.exception.BusinessRuleException;
+import com.joel.ordermanagement.exception.NotFoundException;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -19,7 +22,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -63,7 +65,7 @@ public class CustomerController {
     @GetMapping("/products/{id}")
     public ResponseEntity<EntityModel<Product>> getProduct(@PathVariable String id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+                .orElseThrow(() -> NotFoundException.of("Product", id));
 
         EntityModel<Product> model = EntityModel.of(product);
         model.add(linkTo(methodOn(CustomerController.class).getProduct(id)).withSelfRel());
@@ -77,18 +79,10 @@ public class CustomerController {
     // Order endpoints
     // ------------------------------------------------------------
 
-    /** POST /orders — place a new order; validates customer, product, stock, profitability. */
+    /** POST /orders — place a new multi-item order; validates customer, products, stock, profitability. */
     @PostMapping("/orders")
-    public ResponseEntity<EntityModel<OrderResponse>> createOrder(@RequestBody OrderRequest request) {
-        if (request == null || request.getCustomerId() == null
-                || request.getProductId() == null || request.getQuantity() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Missing required fields: customerId, productId, quantity");
-        }
-
-        Order order = orderService.createOrder(
-                request.getCustomerId(), request.getProductId(), request.getQuantity());
-
+    public ResponseEntity<EntityModel<OrderResponse>> createOrder(@Valid @RequestBody CreateOrderRequest request) {
+        Order order = orderService.createOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(toModel(order));
     }
 
@@ -130,7 +124,7 @@ public class CustomerController {
     @GetMapping("/customers/{id}")
     public ResponseEntity<EntityModel<Customer>> getCustomer(@PathVariable String id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
+                .orElseThrow(() -> NotFoundException.of("Customer", id));
 
         EntityModel<Customer> model = EntityModel.of(customer);
         model.add(linkTo(methodOn(CustomerController.class).getCustomer(id)).withSelfRel());
@@ -149,25 +143,13 @@ public class CustomerController {
         OrderResponse body = OrderResponse.from(order);
         EntityModel<OrderResponse> model = EntityModel.of(body);
         model.add(linkTo(methodOn(CustomerController.class).getOrder(body.getId())).withSelfRel());
-        model.add(linkTo(methodOn(CustomerController.class).getProduct(body.getProductId())).withRel("product"));
         model.add(linkTo(methodOn(CustomerController.class).getCustomer(body.getCustomerId())).withRel("customer"));
         model.add(linkTo(methodOn(CustomerController.class).getCustomerOrders(body.getCustomerId()))
                 .withRel("customer-orders"));
+        model.add(linkTo(methodOn(CustomerController.class).getAllProducts()).withRel("products"));
         if (body.getStatus() == OrderStatus.PENDING) {
             model.add(linkTo(methodOn(CustomerController.class).cancelOrder(body.getId())).withRel("cancel"));
         }
         return model;
-    }
-
-    // ------------------------------------------------------------
-    // Request DTOs
-    // ------------------------------------------------------------
-
-    /** Body for POST /orders. */
-    @Data
-    public static class OrderRequest {
-        private String customerId;
-        private String productId;
-        private Integer quantity;
     }
 }
