@@ -124,10 +124,22 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Testing -->
+		<!--
+			Testing.
+			spring-boot-starter-test bundles: JUnit 5 (Jupiter), AssertJ, Mockito,
+			Hamcrest, JSONassert, JsonPath, and MockMvc. Nothing else needed for
+			plain unit tests or @WebMvcTest slice tests.
+		-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Security test helpers: @WithMockUser, SecurityMockMvcRequestPostProcessors.jwt(), etc. -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -145,6 +157,42 @@
 						</exclude>
 					</excludes>
 				</configuration>
+			</plugin>
+
+			<!--
+				JaCoCo: bytecode instrumentation for test coverage.
+				`prepare-agent` wires the java agent into `surefire`; `report` emits
+				an HTML + CSV summary to target/site/jacoco/ after `mvn test`.
+
+				Excluded from coverage: DTOs (pure Lombok boilerplate), the Spring Boot
+				main class, and the config package (wiring, not logic).
+			-->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.12</version>
+				<configuration>
+					<excludes>
+						<exclude>com/joel/ordermanagement/OrderManagementApplication.class</exclude>
+						<exclude>com/joel/ordermanagement/config/**</exclude>
+						<exclude>**/dto/**</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

@@ -84,7 +84,7 @@ public class OperatorController {
     @PutMapping("/orders/{id}/status")
     @Operation(
             summary = "Update an order's status",
-            description = "Valid transitions: PENDING → PAID → SHIPPED → DELIVERED, or any → CANCELLED.")
+            description = "Valid target statuses: PENDING, SHIPPED, OUT_OF_STOCK, CANCELLED.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Status updated"),
             @ApiResponse(responseCode = "400", description = "Missing status in body"),
