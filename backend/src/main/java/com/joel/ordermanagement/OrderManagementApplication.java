@@ -8,6 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Entry point for the Order Management System.
@@ -25,6 +26,7 @@ public class OrderManagementApplication {
     }
 
     @Bean
+    @Profile("!test")
     public CommandLineRunner initData(CustomerRepository customerRepository,
                                       ProductRepository productRepository,
                                       WholesalerSyncService wholesalerSyncService) {
