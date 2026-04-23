@@ -7,10 +7,16 @@ import com.joel.ordermanagement.order.OrderService;
 import com.joel.ordermanagement.order.OrderStatus;
 import com.joel.ordermanagement.product.Product;
 import com.joel.ordermanagement.product.ProductRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
 import lombok.RequiredArgsConstructor;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import com.joel.ordermanagement.exception.BusinessRuleException;
 import com.joel.ordermanagement.exception.NotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -37,6 +43,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @CrossOrigin
 @RequiredArgsConstructor
+@Tags({
+        @Tag(name = "Products", description = "Browse the product catalogue (public)"),
+        @Tag(name = "Orders", description = "Place, view and cancel customer orders"),
+        @Tag(name = "Customers", description = "Customer profile endpoints")
+})
 public class CustomerController {
 
     private final ProductRepository productRepository;
@@ -44,11 +55,14 @@ public class CustomerController {
     private final OrderService orderService;
 
     // ------------------------------------------------------------
-    // Product endpoints
+    // Product endpoints — public
     // ------------------------------------------------------------
 
-    /** GET /products — list all products with self-links. */
     @GetMapping("/products")
+    @Tag(name = "Products")
+    @SecurityRequirements({})  // public endpoint — no bearer token required
+    @Operation(summary = "List all products", description = "Returns the full catalogue with HATEOAS self-links.")
+    @ApiResponse(responseCode = "200", description = "Product list")
     public ResponseEntity<CollectionModel<EntityModel<Product>>> getAllProducts() {
         List<EntityModel<Product>> productModels = productRepository.findAll().stream()
                 .map(product -> EntityModel.of(product,
@@ -61,9 +75,16 @@ public class CustomerController {
         return ResponseEntity.ok(collection);
     }
 
-    /** GET /products/{id} — single product with links to all-products and create-order. */
     @GetMapping("/products/{id}")
-    public ResponseEntity<EntityModel<Product>> getProduct(@PathVariable String id) {
+    @Tag(name = "Products")
+    @SecurityRequirements({})
+    @Operation(summary = "Get a single product")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Product found"),
+            @ApiResponse(responseCode = "404", description = "Product not found")
+    })
+    public ResponseEntity<EntityModel<Product>> getProduct(
+            @Parameter(description = "Product id", example = "prod-123") @PathVariable String id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("Product", id));
 
@@ -76,27 +97,49 @@ public class CustomerController {
     }
 
     // ------------------------------------------------------------
-    // Order endpoints
+    // Order endpoints — require ROLE_CUSTOMER
     // ------------------------------------------------------------
 
-    /** POST /orders — place a new multi-item order; validates customer, products, stock, profitability. */
     @PostMapping("/orders")
+    @Tag(name = "Orders")
+    @Operation(
+            summary = "Place a new multi-item order",
+            description = """
+                    Validates customer existence, per-line product existence, stock availability
+                    at the wholesaler, and profitability against the current wholesale price.
+                    Whole request is one DB transaction — partial orders can't land.
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Order created"),
+            @ApiResponse(responseCode = "400", description = "Validation error"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid bearer token"),
+            @ApiResponse(responseCode = "403", description = "Caller is not a customer"),
+            @ApiResponse(responseCode = "404", description = "Customer or product not found"),
+            @ApiResponse(responseCode = "409", description = "Business rule violation (out of stock, unprofitable, ...)")
+    })
     public ResponseEntity<EntityModel<OrderResponse>> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         Order order = orderService.createOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(toModel(order));
     }
 
-    /** GET /orders/{id} — single order; cancel link only present when status is PENDING. */
     @GetMapping("/orders/{id}")
-    public ResponseEntity<EntityModel<OrderResponse>> getOrder(@PathVariable String id) {
+    @Tag(name = "Orders")
+    @Operation(summary = "Get a single order", description = "Cancel link appears only when status is PENDING.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Order found"),
+            @ApiResponse(responseCode = "404", description = "Order not found")
+    })
+    public ResponseEntity<EntityModel<OrderResponse>> getOrder(
+            @Parameter(description = "Order id", example = "ord-42") @PathVariable String id) {
         Order order = orderService.getOrder(id);
         return ResponseEntity.ok(toModel(order));
     }
 
-    /** GET /customers/{customerId}/orders — list a customer's orders. */
     @GetMapping("/customers/{customerId}/orders")
+    @Tag(name = "Orders")
+    @Operation(summary = "List a customer's orders")
     public ResponseEntity<CollectionModel<EntityModel<OrderResponse>>> getCustomerOrders(
-            @PathVariable String customerId) {
+            @Parameter(description = "Customer id", example = "CUST001") @PathVariable String customerId) {
 
         List<EntityModel<OrderResponse>> orderModels = orderService.getOrdersByCustomer(customerId).stream()
                 .map(this::toModel)
@@ -109,8 +152,14 @@ public class CustomerController {
         return ResponseEntity.ok(collection);
     }
 
-    /** DELETE /orders/{id} — cancel order; only allowed when status is PENDING. */
     @DeleteMapping("/orders/{id}")
+    @Tag(name = "Orders")
+    @Operation(summary = "Cancel a PENDING order")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Order cancelled"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "409", description = "Order is not in PENDING status")
+    })
     public ResponseEntity<Void> cancelOrder(@PathVariable String id) {
         orderService.cancelOrder(id);
         return ResponseEntity.noContent().build();
@@ -120,9 +169,15 @@ public class CustomerController {
     // Customer profile endpoint
     // ------------------------------------------------------------
 
-    /** GET /customers/{id} — customer profile with links to orders and product catalogue. */
     @GetMapping("/customers/{id}")
-    public ResponseEntity<EntityModel<Customer>> getCustomer(@PathVariable String id) {
+    @Tag(name = "Customers")
+    @Operation(summary = "Get a customer profile")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Customer found"),
+            @ApiResponse(responseCode = "404", description = "Customer not found")
+    })
+    public ResponseEntity<EntityModel<Customer>> getCustomer(
+            @Parameter(description = "Customer id", example = "CUST001") @PathVariable String id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("Customer", id));
 

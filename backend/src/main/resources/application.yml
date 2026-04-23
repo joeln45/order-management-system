@@ -57,3 +57,18 @@ app:
     operator-password: password123
     demo-customer-username: customer
     demo-customer-password: password123
+
+# --------------------------------------------------------------
+# springdoc / Swagger UI
+# --------------------------------------------------------------
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha      # GET/POST/... alphabetically within a tag
+    tags-sorter: alpha            # tags alphabetically in the sidebar
+    try-it-out-enabled: true
+    display-request-duration: true
+  # Group endpoints under /swagger-ui.html?group=... if we ever split them.
+  show-actuator: false

@@ -9,6 +9,12 @@ import com.joel.ordermanagement.order.OrderService;
 import com.joel.ordermanagement.order.OrderStatus;
 import com.joel.ordermanagement.product.Product;
 import com.joel.ordermanagement.product.ProductRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -42,6 +48,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping("/operator")
 @RequiredArgsConstructor
+@Tag(name = "Operator",
+     description = "Operator-only endpoints: manage orders, update prices, view analytics. Requires ROLE_OPERATOR.")
 public class OperatorController {
 
     private final OrderService orderService;
@@ -53,6 +61,8 @@ public class OperatorController {
     // ------------------------------------------------------------
 
     @GetMapping("/orders")
+    @Operation(summary = "List all orders across all customers")
+    @ApiResponse(responseCode = "200", description = "All orders with status-update and customer-revenue links")
     public ResponseEntity<CollectionModel<EntityModel<OrderResponse>>> getAllOrders() {
         List<EntityModel<OrderResponse>> orderModels = orderService.getAllOrders().stream()
                 .map(order -> {
@@ -72,8 +82,17 @@ public class OperatorController {
     }
 
     @PutMapping("/orders/{id}/status")
+    @Operation(
+            summary = "Update an order's status",
+            description = "Valid transitions: PENDING → PAID → SHIPPED → DELIVERED, or any → CANCELLED.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Status updated"),
+            @ApiResponse(responseCode = "400", description = "Missing status in body"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "409", description = "Invalid status transition")
+    })
     public ResponseEntity<Void> updateOrderStatus(
-            @PathVariable String id,
+            @Parameter(description = "Order id", example = "ord-42") @PathVariable String id,
             @RequestBody StatusUpdate statusUpdate) {
 
         if (statusUpdate == null || statusUpdate.getStatus() == null) {
@@ -88,8 +107,16 @@ public class OperatorController {
     // ------------------------------------------------------------
 
     @PutMapping("/products/{id}/price")
+    @Operation(
+            summary = "Update a product's retail price",
+            description = "Does not affect the priceAtPurchase snapshot on existing orders — historical orders keep their old totals.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Price updated"),
+            @ApiResponse(responseCode = "400", description = "Missing retailPrice in body"),
+            @ApiResponse(responseCode = "404", description = "Product not found")
+    })
     public ResponseEntity<Void> updateProductPrice(
-            @PathVariable String id,
+            @Parameter(description = "Product id", example = "prod-123") @PathVariable String id,
             @RequestBody PriceUpdate priceUpdate) {
 
         if (priceUpdate == null || priceUpdate.getRetailPrice() == null) {
@@ -109,7 +136,14 @@ public class OperatorController {
     // ------------------------------------------------------------
 
     @GetMapping("/customers/{id}/revenue")
-    public ResponseEntity<RevenueResponse> getCustomerRevenue(@PathVariable String id) {
+    @Operation(summary = "Get total lifetime revenue from a customer",
+               description = "Sums priceAtPurchase × quantity across all non-CANCELLED orders.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Revenue total"),
+            @ApiResponse(responseCode = "404", description = "Customer not found")
+    })
+    public ResponseEntity<RevenueResponse> getCustomerRevenue(
+            @Parameter(description = "Customer id", example = "CUST001") @PathVariable String id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("Customer", id));
 
@@ -122,21 +156,26 @@ public class OperatorController {
     // ------------------------------------------------------------
 
     @Data
+    @Schema(description = "New status for an order")
     public static class StatusUpdate {
+        @Schema(description = "Target status", example = "SHIPPED")
         private OrderStatus status;
     }
 
     @Data
+    @Schema(description = "New retail price for a product")
     public static class PriceUpdate {
+        @Schema(description = "Retail price in GBP (2 d.p.)", example = "129.99")
         private BigDecimal retailPrice;
     }
 
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
+    @Schema(description = "Lifetime revenue from a single customer")
     public static class RevenueResponse {
-        private String customerId;
-        private String customerName;
-        private BigDecimal totalRevenue;
+        @Schema(example = "CUST001") private String customerId;
+        @Schema(example = "Alice Example") private String customerName;
+        @Schema(example = "1284.50") private BigDecimal totalRevenue;
     }
 }

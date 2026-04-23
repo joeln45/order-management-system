@@ -56,6 +56,18 @@
 			<version>8.10.1</version>
 		</dependency>
 
+		<!--
+			springdoc-openapi: scans @RestController classes at startup and
+			generates an OpenAPI 3 spec at /v3/api-docs, plus a live Swagger UI
+			at /swagger-ui.html. The ...-webmvc-ui artifact bundles both the
+			spec generator and the UI webjar.
+		-->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.6.0</version>
+		</dependency>
+
 		<!-- HATEOAS -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
