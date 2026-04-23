@@ -22,7 +22,11 @@ export async function POST(req: Request) {
       body: JSON.stringify(body),
     });
 
-    const res = NextResponse.json({ username: auth.username, role: auth.role });
+    const res = NextResponse.json({
+      username: auth.username,
+      role: auth.role,
+      customerId: auth.customerId,
+    });
 
     res.cookies.set(ACCESS_COOKIE, auth.accessToken, {
       httpOnly: false, // readable so server components can forward it
@@ -38,7 +42,11 @@ export async function POST(req: Request) {
     });
     res.cookies.set(
       USER_COOKIE,
-      JSON.stringify({ username: auth.username, role: auth.role }),
+      JSON.stringify({
+        username: auth.username,
+        role: auth.role,
+        customerId: auth.customerId,
+      }),
       {
         httpOnly: false,
         sameSite: "lax",

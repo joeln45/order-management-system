@@ -9,4 +9,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, String> {
+
+    /** Resolve a customer by the username on its linked {@code User} row. */
+    java.util.Optional<Customer> findByUser_Username(String username);
 }

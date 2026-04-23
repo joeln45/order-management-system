@@ -33,4 +33,8 @@ public class AuthResponse {
 
     @Schema(description = "Role assigned to the user", example = "OPERATOR")
     private Role role;
+
+    @Schema(description = "Business customer id linked to this account — null for operators",
+            example = "CUST001", nullable = true)
+    private String customerId;
 }

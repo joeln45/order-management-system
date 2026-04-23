@@ -13,6 +13,7 @@ export const USER_COOKIE = "oms_user";
 export interface SessionUser {
   username: string;
   role: Role;
+  customerId: string | null;
 }
 
 /** Server-side: read the current session from cookies, or null if not signed in. */

@@ -130,12 +130,17 @@ public class AuthService {
                 LocalDateTime.now().plus(jwtService.getRefreshTtl()));
         refreshTokenRepository.save(record);
 
+        String customerId = customerRepository.findByUser_Username(user.getUsername())
+                .map(Customer::getId)
+                .orElse(null);
+
         return new AuthResponse(
                 accessToken,
                 rawRefresh,
                 jwtService.getAccessTtl().toSeconds(),
                 user.getUsername(),
-                user.getRole());
+                user.getRole(),
+                customerId);
     }
 
     /** SHA-256 hex digest — used to hash refresh tokens before persistence. */

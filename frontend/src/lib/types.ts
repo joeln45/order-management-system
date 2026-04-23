@@ -12,6 +12,8 @@ export interface AuthResponse {
   accessTokenExpiresInSeconds: number;
   username: string;
   role: Role;
+  /** null for operators, set for customers. */
+  customerId: string | null;
 }
 
 export interface Product {
@@ -22,17 +24,20 @@ export interface Product {
 }
 
 export interface OrderItem {
-  product: Pick<Product, "id" | "description" | "wholesalerId">;
+  productId: string;
+  productDescription: string;
   quantity: number;
   priceAtPurchase: number;
+  lineTotal: number;
 }
 
 export interface OrderResponse {
   id: string;
-  status: OrderStatus;
-  customer: { id: string; name: string };
+  customerId: string;
   items: OrderItem[];
   total: number;
+  status: OrderStatus;
+  orderDate: string;
 }
 
 // HATEOAS envelope shape used by Spring's CollectionModel output.
