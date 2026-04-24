@@ -1,3 +1,13 @@
+# ==============================================================
+# Full-stack local orchestration:
+#   postgres  → database, named volume for persistence
+#   backend   → Spring Boot, waits for postgres healthcheck
+#   frontend  → Next.js standalone server, proxies to backend
+#
+# Usage:
+#   docker compose up --build
+#   docker compose up -d postgres      # just the DB, run app in IDE
+# ==============================================================
 services:
   postgres:
     image: postgres:16-alpine
@@ -16,6 +26,41 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: oms-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # Inside the compose network the DB is reachable by service name.
+      DB_URL: jdbc:postgresql://postgres:5432/oms
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      # Must be >= 32 chars. Override in real deployments via an env file
+      # or your secrets manager — do not rely on this default.
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-dev-only-secret-change-me-at-least-32-characters-long-please}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: oms-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # Server-side fetches go through the compose network; the browser
+      # never talks to the backend directly — it always hits /api/proxy.
+      API_URL: http://backend:8080
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:

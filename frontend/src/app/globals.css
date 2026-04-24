@@ -1,26 +1,14 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/*
+ * We deliberately pin the UI to a light palette. The default Next.js starter
+ * flips --background under prefers-color-scheme: dark, but the rest of the
+ * app uses explicit Tailwind utilities (bg-white cards, text-gray-600, etc.)
+ * that were designed for a light surface — honouring the OS preference
+ * makes those cards look stark on near-black. Revisit when we build a real
+ * dark theme with matching token swaps.
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
