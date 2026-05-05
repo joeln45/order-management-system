@@ -33,13 +33,14 @@ export default async function OperatorPage() {
   let errorMessage: string | null = null;
 
   try {
-    // Operator orders are wrapped in EntityModel (each has _links) — we only
-    // need the payload, so pick `.content` off each entry.
+    // Spring HATEOAS picks the embedded key from the wrapped type, not the
+    // wrapper. CollectionModel<EntityModel<OrderResponse>> serialises with
+    // key `orderResponseList`; each entry has the OrderResponse fields at
+    // the top level alongside `_links` (no `.content` nesting).
     const ordersBody = await apiFetch<
-      HateoasCollection<"entityModelList", { content: OrderResponse }>
+      HateoasCollection<"orderResponseList", OrderResponse>
     >("/operator/orders", { bearer: session.accessToken });
-    orders =
-      ordersBody._embedded?.entityModelList?.map((em) => em.content) ?? [];
+    orders = ordersBody._embedded?.orderResponseList ?? [];
 
     const productsBody = await apiFetch<
       HateoasCollection<"productList", Product>
