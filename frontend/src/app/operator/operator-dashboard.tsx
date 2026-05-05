@@ -2,7 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { OrderResponse, OrderStatus, Product } from "@/lib/types";
+import type {
+  CustomerSummary,
+  OrderResponse,
+  OrderStatus,
+  Product,
+} from "@/lib/types";
 
 /**
  * Interactive slab of the operator page. Handles three concerns:
@@ -11,6 +16,10 @@ import type { OrderResponse, OrderStatus, Product } from "@/lib/types";
  *   3. Look up a customer's lifetime revenue via GET /operator/customers/{id}/revenue
  *
  * All three go through `/api/proxy/...` so the browser never sees the token.
+ *
+ * Customers are passed in from the server component so the revenue lookup
+ * can render a dropdown instead of a free-text field — no typos, no
+ * "customer not found" guessing.
  */
 const STATUSES: OrderStatus[] = [
   "PENDING",
@@ -19,16 +28,29 @@ const STATUSES: OrderStatus[] = [
   "CANCELLED",
 ];
 
+const STATUS_STYLES: Record<OrderStatus, string> = {
+  PENDING: "bg-amber-100 text-amber-800",
+  SHIPPED: "bg-green-100 text-green-800",
+  OUT_OF_STOCK: "bg-red-100 text-red-800",
+  CANCELLED: "bg-gray-200 text-gray-700",
+};
+
 export function OperatorDashboard({
   orders,
   products,
+  customers,
 }: {
   orders: OrderResponse[];
   products: Product[];
+  customers: CustomerSummary[];
 }) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Lookup customer name by id so order rows can show "Demo Customer (CUST001)"
+  // instead of just "CUST001".
+  const customerNameById = new Map(customers.map((c) => [c.id, c.name]));
 
   async function call(
     path: string,
@@ -88,58 +110,99 @@ export function OperatorDashboard({
 
       {/* Orders */}
       <section>
-        <h2 className="text-lg font-semibold">All orders</h2>
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold">All orders</h2>
+          <span className="text-sm text-gray-500">
+            {orders.length} total
+          </span>
+        </div>
         {orders.length === 0 ? (
           <p className="mt-2 text-sm text-gray-600">No orders yet.</p>
         ) : (
           <ul className="mt-3 divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 bg-white">
-            {orders.map((o) => (
-              <li
-                key={o.id}
-                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium">Order {o.id.substring(0, 8)}</p>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Customer {o.customerId} — {o.items.length} item
-                    {o.items.length === 1 ? "" : "s"} — Total £
-                    {o.total.toFixed(2)}
-                  </p>
-                  <ul className="mt-2 text-xs text-gray-500">
-                    {o.items.map((it, idx) => (
-                      <li key={idx}>
-                        {it.quantity} × {it.productDescription} @ £
-                        {it.priceAtPurchase.toFixed(2)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    defaultValue={o.status}
-                    onChange={(e) =>
-                      updateStatus(o.id, e.target.value as OrderStatus)
-                    }
-                    className="rounded border border-gray-300 px-2 py-1 text-sm"
-                  >
-                    {STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </li>
-            ))}
+            {orders.map((o) => {
+              const customerName =
+                customerNameById.get(o.customerId) ?? "Unknown customer";
+              return (
+                <li
+                  key={o.id}
+                  className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">
+                        Order {o.id.substring(0, 8)}
+                      </p>
+                      <span
+                        className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[o.status]}`}
+                      >
+                        {o.status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-600">
+                      <span className="font-medium text-gray-800">
+                        {customerName}
+                      </span>{" "}
+                      <span className="text-gray-400">({o.customerId})</span>{" "}
+                      — {o.items.length} item
+                      {o.items.length === 1 ? "" : "s"} — Total £
+                      {o.total.toFixed(2)}
+                    </p>
+                    {o.orderDate && (
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        Placed{" "}
+                        {new Date(o.orderDate).toLocaleString(undefined, {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </p>
+                    )}
+                    <ul className="mt-2 text-xs text-gray-500">
+                      {o.items.map((it, idx) => (
+                        <li key={idx}>
+                          {it.quantity} × {it.productDescription} @ £
+                          {it.priceAtPurchase.toFixed(2)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <label className="text-xs text-gray-500">
+                      Update status
+                    </label>
+                    <select
+                      defaultValue={o.status}
+                      onChange={(e) =>
+                        updateStatus(o.id, e.target.value as OrderStatus)
+                      }
+                      className="rounded border border-gray-300 px-2 py-1 text-sm"
+                    >
+                      {STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
 
       {/* Products */}
       <section>
-        <h2 className="text-lg font-semibold">Product pricing</h2>
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold">Product pricing</h2>
+          <span className="text-sm text-gray-500">
+            {products.length} product{products.length === 1 ? "" : "s"}
+          </span>
+        </div>
         {products.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-600">No products in catalogue.</p>
+          <p className="mt-2 text-sm text-gray-600">
+            No products in catalogue.
+          </p>
         ) : (
           <ul className="mt-3 divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 bg-white">
             {products.map((p) => (
@@ -149,10 +212,13 @@ export function OperatorDashboard({
         )}
       </section>
 
-      {/* Revenue lookup */}
+      {/* Revenue lookup — dropdown of seeded customers, no free-text. */}
       <section>
         <h2 className="text-lg font-semibold">Customer revenue</h2>
-        <RevenueLookup />
+        <p className="mt-1 text-xs text-gray-500">
+          Lifetime total across all non-cancelled orders.
+        </p>
+        <RevenueLookup customers={customers} />
       </section>
     </div>
   );
@@ -198,21 +264,24 @@ function PriceRow({
   );
 }
 
-function RevenueLookup() {
-  const [customerId, setCustomerId] = useState("");
-  const [result, setResult] = useState<string | null>(null);
+function RevenueLookup({ customers }: { customers: CustomerSummary[] }) {
+  const [customerId, setCustomerId] = useState(customers[0]?.id ?? "");
+  const [result, setResult] = useState<{
+    name: string;
+    total: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function lookup(e: React.FormEvent) {
     e.preventDefault();
-    if (!customerId.trim()) return;
+    if (!customerId) return;
     setBusy(true);
     setResult(null);
     setError(null);
     try {
       const res = await fetch(
-        `/api/proxy/operator/customers/${encodeURIComponent(customerId.trim())}/revenue`,
+        `/api/proxy/operator/customers/${encodeURIComponent(customerId)}/revenue`,
       );
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
@@ -222,25 +291,39 @@ function RevenueLookup() {
           customerName: string;
           totalRevenue: number;
         };
-        setResult(
-          `${body.customerName} → £${Number(body.totalRevenue).toFixed(2)}`,
-        );
+        setResult({
+          name: body.customerName,
+          total: Number(body.totalRevenue),
+        });
       }
     } finally {
       setBusy(false);
     }
   }
 
+  if (customers.length === 0) {
+    return (
+      <p className="mt-3 text-sm text-gray-600">
+        No customers in the system yet.
+      </p>
+    );
+  }
+
   return (
-    <form onSubmit={lookup} className="mt-3 flex items-end gap-2">
+    <form onSubmit={lookup} className="mt-3 flex flex-wrap items-end gap-3">
       <label className="text-sm">
-        <span className="mb-1 block text-gray-700">Customer ID</span>
-        <input
+        <span className="mb-1 block text-gray-700">Customer</span>
+        <select
           value={customerId}
           onChange={(e) => setCustomerId(e.target.value)}
-          placeholder="CUST001"
-          className="rounded border border-gray-300 px-2 py-1.5"
-        />
+          className="min-w-64 rounded border border-gray-300 px-2 py-1.5"
+        >
+          {customers.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.id})
+            </option>
+          ))}
+        </select>
       </label>
       <button
         type="submit"
@@ -249,7 +332,15 @@ function RevenueLookup() {
       >
         {busy ? "Looking up…" : "Look up"}
       </button>
-      {result && <p className="text-sm text-green-700">{result}</p>}
+      {result && (
+        <p className="text-sm">
+          <span className="text-gray-700">{result.name}</span>{" "}
+          <span className="text-gray-400">→</span>{" "}
+          <span className="font-semibold text-green-700">
+            £{result.total.toFixed(2)}
+          </span>
+        </p>
+      )}
       {error && <p className="text-sm text-red-700">{error}</p>}
     </form>
   );

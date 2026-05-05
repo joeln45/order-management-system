@@ -37,4 +37,8 @@ public class AuthResponse {
     @Schema(description = "Business customer id linked to this account — null for operators",
             example = "CUST001", nullable = true)
     private String customerId;
+
+    @Schema(description = "Display name of the linked customer profile — null for operators",
+            example = "Demo Customer", nullable = true)
+    private String customerName;
 }

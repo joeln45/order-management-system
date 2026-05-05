@@ -135,6 +135,21 @@ public class OperatorController {
     // Customer analytics
     // ------------------------------------------------------------
 
+    @GetMapping("/customers")
+    @Operation(summary = "List all customers (id + name)",
+               description = "Lightweight list for operator UIs (e.g. revenue dropdown). " +
+                             "Excludes contact/address details — those live behind /customers/{id}.")
+    @ApiResponse(responseCode = "200", description = "All customers")
+    public ResponseEntity<CollectionModel<CustomerSummary>> getAllCustomers() {
+        List<CustomerSummary> summaries = customerRepository.findAll().stream()
+                .map(c -> new CustomerSummary(c.getId(), c.getName()))
+                .collect(Collectors.toList());
+
+        CollectionModel<CustomerSummary> collection = CollectionModel.of(summaries);
+        collection.add(linkTo(methodOn(OperatorController.class).getAllCustomers()).withSelfRel());
+        return ResponseEntity.ok(collection);
+    }
+
     @GetMapping("/customers/{id}/revenue")
     @Operation(summary = "Get total lifetime revenue from a customer",
                description = "Sums priceAtPurchase × quantity across all non-CANCELLED orders.")
@@ -167,6 +182,15 @@ public class OperatorController {
     public static class PriceUpdate {
         @Schema(description = "Retail price in GBP (2 d.p.)", example = "129.99")
         private BigDecimal retailPrice;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Schema(description = "Compact customer entry for dropdowns and pickers")
+    public static class CustomerSummary {
+        @Schema(example = "CUST001") private String id;
+        @Schema(example = "Alice Example") private String name;
     }
 
     @Data

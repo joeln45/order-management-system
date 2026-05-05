@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
 import { getSession } from "@/lib/auth";
-import type { HateoasCollection, OrderResponse, Product } from "@/lib/types";
+import type {
+  CustomerSummary,
+  HateoasCollection,
+  OrderResponse,
+  Product,
+} from "@/lib/types";
 import { OperatorDashboard } from "./operator-dashboard";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +35,7 @@ export default async function OperatorPage() {
 
   let orders: OrderResponse[] = [];
   let products: Product[] = [];
+  let customers: CustomerSummary[] = [];
   let errorMessage: string | null = null;
 
   try {
@@ -46,6 +52,11 @@ export default async function OperatorPage() {
       HateoasCollection<"productList", Product>
     >("/products");
     products = productsBody._embedded?.productList ?? [];
+
+    const customersBody = await apiFetch<
+      HateoasCollection<"customerSummaryList", CustomerSummary>
+    >("/operator/customers", { bearer: session.accessToken });
+    customers = customersBody._embedded?.customerSummaryList ?? [];
   } catch (e) {
     errorMessage =
       e instanceof ApiError
@@ -70,7 +81,11 @@ export default async function OperatorPage() {
       )}
 
       {!errorMessage && (
-        <OperatorDashboard orders={orders} products={products} />
+        <OperatorDashboard
+          orders={orders}
+          products={products}
+          customers={customers}
+        />
       )}
     </main>
   );

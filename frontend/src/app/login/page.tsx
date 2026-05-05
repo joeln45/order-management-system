@@ -74,10 +74,18 @@ export default function LoginPage() {
           {submitting ? "Signing in…" : "Sign in"}
         </button>
       </form>
-      <p className="mt-6 text-sm text-gray-600">
-        Dev credentials: <code>operator</code> / <code>password123</code> or{" "}
-        <code>customer</code> / <code>password123</code>
-      </p>
+      <div className="mt-6 space-y-3 text-sm text-gray-600">
+        <p>
+          Dev credentials: <code>operator</code> / <code>password123</code>{" "}
+          or <code>customer</code> / <code>password123</code>
+        </p>
+        <p className="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
+          <strong>Tip:</strong> to demo operator + customer side-by-side,
+          open one window normally and the other in <em>incognito / private</em>.
+          Cookies are scoped per-browser-profile, so two regular tabs share
+          the same session.
+        </p>
+      </div>
     </main>
   );
 }

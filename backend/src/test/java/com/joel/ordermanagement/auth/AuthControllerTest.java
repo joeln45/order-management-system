@@ -54,7 +54,7 @@ class AuthControllerTest {
         body.setPostalAddress("10 Downing St");
 
         when(authService.register(any(RegisterRequest.class)))
-                .thenReturn(new AuthResponse("jwt.access", "raw-refresh", 900, "alice", Role.CUSTOMER, "CUST001"));
+                .thenReturn(new AuthResponse("jwt.access", "raw-refresh", 900, "alice", Role.CUSTOMER, "CUST001", "Alice Example"));
 
         mvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -132,7 +132,7 @@ class AuthControllerTest {
         body.setPassword("password123");
 
         when(authService.login(any(LoginRequest.class)))
-                .thenReturn(new AuthResponse("jwt.access", "raw-refresh", 900, "operator", Role.OPERATOR, null));
+                .thenReturn(new AuthResponse("jwt.access", "raw-refresh", 900, "operator", Role.OPERATOR, null, null));
 
         mvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -181,7 +181,7 @@ class AuthControllerTest {
         body.setRefreshToken("some-refresh");
 
         when(authService.refresh(anyString()))
-                .thenReturn(new AuthResponse("new.jwt", "new-raw", 900, "alice", Role.CUSTOMER, "CUST001"));
+                .thenReturn(new AuthResponse("new.jwt", "new-raw", 900, "alice", Role.CUSTOMER, "CUST001", "Alice Example"));
 
         mvc.perform(post("/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)

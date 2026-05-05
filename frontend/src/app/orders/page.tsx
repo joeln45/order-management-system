@@ -77,6 +77,15 @@ export default async function MyOrdersPage() {
                   {o.items.length} item{o.items.length === 1 ? "" : "s"} —
                   Total £{o.total.toFixed(2)}
                 </p>
+                {o.orderDate && (
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    Placed{" "}
+                    {new Date(o.orderDate).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </p>
+                )}
                 <ul className="mt-2 text-xs text-gray-500">
                   {o.items.map((it, idx) => (
                     <li key={idx}>

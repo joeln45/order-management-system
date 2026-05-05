@@ -26,6 +26,7 @@ export async function POST(req: Request) {
       username: auth.username,
       role: auth.role,
       customerId: auth.customerId,
+      customerName: auth.customerName,
     });
 
     res.cookies.set(ACCESS_COOKIE, auth.accessToken, {
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
         username: auth.username,
         role: auth.role,
         customerId: auth.customerId,
+        customerName: auth.customerName,
       }),
       {
         httpOnly: false,

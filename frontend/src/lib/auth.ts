@@ -14,6 +14,7 @@ export interface SessionUser {
   username: string;
   role: Role;
   customerId: string | null;
+  customerName: string | null;
 }
 
 /** Server-side: read the current session from cookies, or null if not signed in. */

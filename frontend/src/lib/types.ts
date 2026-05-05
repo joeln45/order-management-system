@@ -14,6 +14,14 @@ export interface AuthResponse {
   role: Role;
   /** null for operators, set for customers. */
   customerId: string | null;
+  /** Display name from the customer profile — null for operators. */
+  customerName: string | null;
+}
+
+/** Compact customer entry returned by GET /operator/customers. */
+export interface CustomerSummary {
+  id: string;
+  name: string;
 }
 
 export interface Product {
