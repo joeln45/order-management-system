@@ -25,8 +25,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -53,25 +51,31 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(org.junit.jupiter.api.MethodOrderer.OrderAnnotation.class)
 class OrderFlowIntegrationTest {
 
     /**
-     * @ServiceConnection (Spring Boot 3.1+) auto-wires the container's JDBC URL,
-     * username, password and driver into Spring's DataSource AFTER the container
-     * has started. This avoids the trap of @DynamicPropertySource asking for
-     * getJdbcUrl() before the container is ready — which is exactly what blew up
-     * in CI before this fix.
+     * Singleton-container pattern. We deliberately do NOT use {@code @Testcontainers}
+     * + {@code @Container} here, because that lifecycle starts the container in
+     * JUnit's {@code beforeAll} — which fires AFTER Spring's
+     * {@code @ServiceConnection} resolution tries to read {@code getJdbcUrl()}.
+     * Result: "Mapped port can only be obtained after the container is started".
+     * <p>
+     * Starting the container in a static initializer guarantees it's running
+     * before the class is even touched by JUnit or Spring. The JVM shuts it
+     * down via Testcontainers' own Ryuk reaper at the end of the test run.
      */
-    @Container
     @ServiceConnection
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:16-alpine")
                     .withDatabaseName("oms_test")
                     .withUsername("test")
                     .withPassword("test");
+
+    static {
+        POSTGRES.start();
+    }
 
     static WireMockServer wireMock;
 
