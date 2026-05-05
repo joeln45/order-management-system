@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.joel.ordermanagement.auth.dto.LoginRequest;
 import com.joel.ordermanagement.auth.dto.RegisterRequest;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -77,15 +76,18 @@ class OrderFlowIntegrationTest {
         POSTGRES.start();
     }
 
-    static WireMockServer wireMock;
+    /**
+     * WireMock must also be started in a static block — for the same reason
+     * Postgres is. {@code @DynamicPropertySource} reads {@code wireMock.baseUrl()}
+     * while loading the Spring context, which happens before any
+     * {@code @BeforeAll} method runs.
+     */
+    static final WireMockServer wireMock =
+            new WireMockServer(wireMockConfig().dynamicPort());
 
-    @BeforeAll
-    void startWireMock() {
-        wireMock = new WireMockServer(wireMockConfig().dynamicPort());
+    static {
         wireMock.start();
         // Any /product/** call → return a generic "in-stock, profitable" payload.
-        // We don't create orders in this smoke test, but the context needs the
-        // wholesaler to be reachable for any eager HTTP it might attempt.
         wireMock.stubFor(get(urlPathMatching("/product/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
