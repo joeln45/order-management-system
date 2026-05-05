@@ -12,6 +12,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
@@ -57,7 +58,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestMethodOrder(org.junit.jupiter.api.MethodOrderer.OrderAnnotation.class)
 class OrderFlowIntegrationTest {
 
+    /**
+     * @ServiceConnection (Spring Boot 3.1+) auto-wires the container's JDBC URL,
+     * username, password and driver into Spring's DataSource AFTER the container
+     * has started. This avoids the trap of @DynamicPropertySource asking for
+     * getJdbcUrl() before the container is ready — which is exactly what blew up
+     * in CI before this fix.
+     */
     @Container
+    @ServiceConnection
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:16-alpine")
                     .withDatabaseName("oms_test")
@@ -92,11 +101,8 @@ class OrderFlowIntegrationTest {
 
     @DynamicPropertySource
     static void wireProperties(DynamicPropertyRegistry r) {
-        // Real Postgres via Testcontainers
-        r.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        r.add("spring.datasource.username", POSTGRES::getUsername);
-        r.add("spring.datasource.password", POSTGRES::getPassword);
-        r.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        // DataSource URL/user/pass/driver are now provided by @ServiceConnection.
+        // We only need to configure the bits Spring can't infer from the container.
         r.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
         r.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         r.add("spring.flyway.enabled", () -> "true");

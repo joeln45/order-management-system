@@ -147,7 +147,17 @@
 			Testcontainers: spins up a throw-away PostgreSQL in Docker per test
 			class. Gives the integration test a real Postgres instance (matching
 			prod) without needing a locally installed server.
+
+			spring-boot-testcontainers provides @ServiceConnection — it auto-wires
+			the container's JDBC URL into Spring AFTER the container has started,
+			avoiding the classic "Mapped port can only be obtained after the
+			container is started" trap that hits @DynamicPropertySource.
 		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
