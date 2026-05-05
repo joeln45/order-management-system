@@ -176,12 +176,17 @@ class OrderFlowIntegrationTest {
 
     @Test
     @Order(2)
-    void postOrders_withoutToken_returns401() {
+    void postOrders_withoutToken_isRejected() {
+        // Spring Security's CSRF filter rejects an unauthenticated POST with
+        // 403 (not 401) — the CSRF check runs before the auth chain decides
+        // "is the user logged in?". Either status proves the endpoint isn't
+        // open; we accept both to be robust against config changes.
         ResponseEntity<JsonNode> r = rest.postForEntity(
                 url("/orders"),
                 new HttpEntity<>("{\"customerId\":\"x\",\"items\":[]}", jsonHeaders()),
                 JsonNode.class);
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(r.getStatusCode())
+                .isIn(HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN);
     }
 
     @Test
