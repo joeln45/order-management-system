@@ -59,11 +59,21 @@ export async function Nav() {
               <LogoutButton />
             </li>
           ) : (
-            <li>
-              <Link href="/login" className="hover:text-blue-600">
-                Sign in
-              </Link>
-            </li>
+            <>
+              <li>
+                <Link href="/register" className="hover:text-blue-600">
+                  Register
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/login"
+                  className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Sign in
+                </Link>
+              </li>
+            </>
           )}
         </ul>
       </div>

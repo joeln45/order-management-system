@@ -37,7 +37,13 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto max-w-sm p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Sign in</h1>
+      <h1 className="mb-1 text-2xl font-semibold">Sign in</h1>
+      <p className="mb-6 text-sm text-gray-600">
+        New customer?{" "}
+        <a href="/register" className="text-blue-600 hover:underline">
+          Create an account
+        </a>
+      </p>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium">Username</span>
