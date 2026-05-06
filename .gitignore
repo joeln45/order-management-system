@@ -1,7 +1,5 @@
-# ============================================================
-# Order Management System — root .gitignore
-# Covers Java/Maven backend and Next.js frontend (added later)
-# ============================================================
+# Root .gitignore for the Order Management System.
+# Covers the Java/Maven backend and the Next.js frontend.
 
 # --- Java / Maven build output ---
 **/target/

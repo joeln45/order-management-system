@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 /**
  * Operator landing page. Server-side we fetch the full order + product lists
  * (bearer-authenticated), then hand off to a client component for the
- * interactive bits — status updates, price edits, revenue lookup.
+ * interactive bits: status updates, price edits, revenue lookup.
  *
  * Spring's HATEOAS CollectionModel wraps entity models under `_embedded`.
  * For operator orders the inner collection key is `entityModelList` and each

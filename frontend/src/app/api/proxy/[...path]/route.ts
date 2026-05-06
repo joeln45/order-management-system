@@ -4,13 +4,12 @@ import { API_BASE } from "@/lib/api";
 import { ACCESS_COOKIE } from "@/lib/auth";
 
 /**
- * Authenticated proxy: the browser hits `/api/proxy/<backend-path>`, this
- * handler reads the access-token cookie server-side, attaches it as a
- * Bearer header, and forwards to Spring. That way client components never
- * have to touch the token — and it keeps CORS a non-issue since the
- * browser only ever talks to Next.
+ * Server-side proxy. The browser hits /api/proxy/<backend-path>; this
+ * handler reads the access-token cookie, slaps it on as a Bearer header,
+ * and forwards to Spring. Client components never have to handle the
+ * token, and the browser only ever talks to Next, which sidesteps CORS.
  *
- * Supports GET/POST/PUT/DELETE — whatever the client used, we mirror.
+ * GET/POST/PUT/DELETE all just delegate to forward().
  */
 async function forward(req: NextRequest, path: string[]) {
   const jar = await cookies();
@@ -31,7 +30,7 @@ async function forward(req: NextRequest, path: string[]) {
   const res = await fetch(url, { method: req.method, headers, body });
 
   const respBody = await res.text();
-  // Preserve status + body but strip hop-by-hop headers — NextResponse handles that for us.
+  // Preserve status + body. NextResponse strips hop-by-hop headers for us.
   return new NextResponse(respBody || null, {
     status: res.status,
     headers: {

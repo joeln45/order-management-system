@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A customer order — a header row that owns one or more {@link OrderItem}s.
+ * A customer order: a header row that owns one or more {@link OrderItem}s.
  * <p>
  * The order itself carries the customer, status and date; the line items
  * carry the products, quantities and prices. {@link #total()} sums across
@@ -55,7 +55,7 @@ public class Order {
     /**
      * EAGER + cascade ALL + orphanRemoval: saving an Order saves all its items,
      * deleting an Order deletes its items, and removing an item from this list
-     * deletes it from the DB. EAGER keeps Phase 3 simple — Phase 7 will replace
+     * deletes it from the DB. EAGER keeps Phase 3 simple; Phase 7 will replace
      * it with a JOIN FETCH query to avoid the N+1 problem at scale.
      */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true,
@@ -94,7 +94,7 @@ public class Order {
         item.setOrder(this);
     }
 
-    /** Sum of line totals across all items. Derived — never stored. */
+    /** Sum of line totals across all items. Derived, never stored. */
     public BigDecimal total() {
         return items.stream()
                 .map(OrderItem::lineTotal)

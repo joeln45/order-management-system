@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Profile;
  * Entry point for the Order Management System.
  * <p>
  * Customer seed data is owned by Flyway migration {@code V2__seed_customers.sql}.
- * The {@link CommandLineRunner} below only triggers the wholesaler product sync —
+ * The {@link CommandLineRunner} below only triggers the wholesaler product sync,
  * a runtime concern that doesn't belong in a database migration.
  */
 @Slf4j

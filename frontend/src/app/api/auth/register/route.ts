@@ -6,7 +6,7 @@ import type { AuthResponse } from "@/lib/types";
 /**
  * Proxies the registration form to Spring's /auth/register, then sets the
  * same three cookies as the login route so the user is immediately signed in.
- * The browser never sees the raw tokens — they travel Next.js → Spring only.
+ * The browser never sees the raw tokens; they travel Next.js → Spring only.
  */
 export async function POST(req: Request) {
   const body = await req.json();

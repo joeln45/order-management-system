@@ -4,10 +4,10 @@ import { LogoutButton } from "./logout-button";
 
 /**
  * Top-of-page navigation. Server-rendered so the role check runs against
- * the cookie session, not client state — no flicker between guest/signed-in.
+ * the cookie session, not client state, so there's no flicker between guest/signed-in.
  *
  * For customers we show their *display name* (from the customer profile,
- * not the username) — that's what shows up on invoices, orders, etc.
+ * not the username); that's what shows up on invoices, orders, etc.
  * Operators don't have a linked customer profile, so we just show the
  * username for them.
  */

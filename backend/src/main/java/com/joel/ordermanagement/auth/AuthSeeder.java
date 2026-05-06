@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Seeds a default {@code OPERATOR} user and a demo {@code CUSTOMER} user
- * on startup, using {@link PasswordEncoder} to hash passwords — something
+ * on startup, using {@link PasswordEncoder} to hash passwords, something
  * a raw Flyway SQL migration can't do. Guarded by {@code app.seed.enabled}
  * so production can leave it off.
  */

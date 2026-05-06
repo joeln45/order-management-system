@@ -22,7 +22,7 @@ export default async function Home() {
         >
           <h2 className="font-medium">Browse products</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Public catalogue — no sign-in required.
+            Public catalogue, no sign-in required.
           </p>
         </Link>
         {session ? (

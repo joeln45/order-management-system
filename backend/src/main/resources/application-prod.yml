@@ -1,11 +1,9 @@
-# ==============================================================
-# Prod profile — real PostgreSQL database.
-# Activated with: --spring.profiles.active=prod
+# Prod profile: real PostgreSQL database.
+# Activate with --spring.profiles.active=prod.
 #
-# Connection details default to the local docker-compose Postgres,
-# but can (and should) be overridden via environment variables in
-# real deployments — never commit real secrets to git.
-# ==============================================================
+# Connection details default to the local docker-compose Postgres but
+# should be overridden via environment variables in real deployments.
+# Don't commit real secrets to git.
 spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/oms}

@@ -4,7 +4,7 @@ import type { Role } from "./types";
 /**
  * Cookie names. The access token lives in a readable cookie (short-lived,
  * 15 min) so middleware/server components can attach it to backend calls.
- * The refresh token is HttpOnly — browser JS cannot read or steal it.
+ * The refresh token is HttpOnly, so browser JS cannot read or steal it.
  */
 export const ACCESS_COOKIE = "oms_access";
 export const REFRESH_COOKIE = "oms_refresh";

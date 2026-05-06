@@ -58,7 +58,7 @@ public class OrderService {
 
             if (!wholesalerService.isProfitable(product.getWholesalerId(), product.getRetailPrice())) {
                 throw new BusinessRuleException(
-                        "Cannot sell " + product.getDescription() + " — retail price not profitable");
+                        "Cannot sell " + product.getDescription() + ": retail price not profitable");
             }
 
             order.addItem(new OrderItem(product, line.getQuantity(), product.getRetailPrice()));
@@ -86,7 +86,7 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> NotFoundException.of("Order", orderId));
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new BusinessRuleException("Cannot cancel order — status is " + order.getStatus());
+            throw new BusinessRuleException("Cannot cancel order: status is " + order.getStatus());
         }
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);

@@ -30,8 +30,8 @@ export default async function NewOrderPage() {
       <h1 className="text-2xl font-semibold">Place a new order</h1>
       <p className="mt-1 text-sm text-gray-600">
         Add line items, then submit. The backend checks stock and
-        profitability before accepting — any failure surfaces as an error on
-        this page.
+        profitability before accepting; any failure shows up as an error
+        on this page.
       </p>
       <div className="mt-6">
         <NewOrderForm

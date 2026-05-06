@@ -16,19 +16,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Low-level wholesaler HTTP client.
- * <p>
- * Shared by {@link WholesalerService} (order-time stock/price checks) and
- * {@link WholesalerSyncService} (startup catalogue sync). Three resilience
- * layers are stacked on top of every call:
- * <ol>
- *   <li><b>Timeouts</b> — inherited from the shared {@link WebClient} bean.</li>
- *   <li><b>Retries with exponential backoff + jitter</b> — configurable per
- *       {@code wholesaler.retry.*} in {@code application.yml}. Only retries
- *       5xx / transport errors, never 4xx (those are real "not found"s).</li>
- *   <li><b>Caffeine cache</b> — 5-minute TTL on product fetches; see
- *       {@link CacheConfig}.</li>
- * </ol>
+ * Low-level wholesaler HTTP client. Used by WholesalerService for
+ * order-time stock/price checks and by WholesalerSyncService for the
+ * startup catalogue sync.
+ *
+ * Every call goes through three layers: timeouts (inherited from the
+ * shared WebClient bean), retries with exponential backoff + jitter
+ * (configured via wholesaler.retry.* in application.yml; only on 5xx and
+ * transport errors, never 4xx), and a 5-minute Caffeine cache on product
+ * fetches (see CacheConfig).
  */
 @Slf4j
 @Component
@@ -63,8 +59,8 @@ public class WholesalerClient {
     }
 
     /**
-     * Fetch a category listing. Not cached — sync runs at most once at startup,
-     * and the listing is small enough that caching buys nothing here.
+     * Fetch a category listing. Not cached: the sync runs at most once at
+     * startup and the listings are small.
      */
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> getProductsInCategory(String category) {
@@ -77,10 +73,7 @@ public class WholesalerClient {
                 : List.of();
     }
 
-    // ------------------------------------------------------------
-    // Internal: GET with retry/backoff
-    // ------------------------------------------------------------
-
+    // GET with retry/backoff
     private Map<String, Object> fetchMap(String path) {
         try {
             return webClient.get()
@@ -90,7 +83,7 @@ public class WholesalerClient {
                     .retryWhen(retrySpec(path))
                     .block();
         } catch (WebClientResponseException e) {
-            // 4xx → definitely not a retryable problem; log and move on.
+            // 4xx is not retryable; log and move on.
             log.warn("Wholesaler returned {} for GET {}: {}", e.getStatusCode(), path, e.getStatusText());
             return null;
         } catch (Exception e) {

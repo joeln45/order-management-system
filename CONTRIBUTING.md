@@ -16,7 +16,7 @@ docker compose up --build
 docker compose up -d postgres
 
 # Backend (from backend/)
-./mvnw spring-boot:run          # dev profile — H2 in-memory
+./mvnw spring-boot:run          # dev profile, H2 in-memory
 # or against the real Postgres:
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
 
@@ -28,10 +28,10 @@ npm install && npm run dev
 ## Running tests
 
 ```bash
-# Backend — unit + slice + integration tests + JaCoCo coverage gate
+# Backend: unit + slice + integration tests + JaCoCo coverage gate
 cd backend && ./mvnw verify
 
-# Frontend — lint + TypeScript check + production build
+# Frontend: lint + TypeScript check + production build
 cd frontend && npm run lint && npm run build
 ```
 
@@ -40,7 +40,7 @@ Docker Desktop must be running for the Testcontainers integration test.
 ## Code style
 
 - **Backend**: standard Java conventions. Lombok annotations preferred over manual getters/setters.
-- **Frontend**: ESLint config is already set up — `npm run lint` before committing.
+- **Frontend**: ESLint config is already set up; run `npm run lint` before committing.
 - **Commits**: short imperative subject line, blank line, then a body if needed.
 
 ## Branching

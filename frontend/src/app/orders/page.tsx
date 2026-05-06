@@ -74,7 +74,7 @@ export default async function MyOrdersPage() {
               <div>
                 <p className="font-medium">Order {o.id.substring(0, 8)}</p>
                 <p className="mt-1 text-sm text-gray-600">
-                  {o.items.length} item{o.items.length === 1 ? "" : "s"} —
+                  {o.items.length} item{o.items.length === 1 ? "" : "s"} ·
                   Total £{o.total.toFixed(2)}
                 </p>
                 {o.orderDate && (

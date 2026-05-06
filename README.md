@@ -1,8 +1,8 @@
 # Order Management System
 
-A full-stack drop-shipping order management platform: Spring Boot REST API on the back, Next.js 16 App Router on the front, Postgres underneath, all wired up with Docker Compose and CI.
+A full-stack drop-shipping order management platform: Spring Boot REST API on the back, Next.js 16 App Router on the front, Postgres underneath, wired up with Docker Compose and CI.
 
-Originally a CSCU9YW Web Services coursework assignment — this repo is the portfolio upgrade: JWT auth, HATEOAS responses, external wholesaler integration, containerised deployment, and a typed UI that consumes it all.
+This started life as the CSCU9YW Web Services coursework assignment. This repo is the portfolio rebuild on top of it: JWT auth, HATEOAS responses, an external wholesaler integration, containerised deployment, and a typed UI to drive it all.
 
 ---
 
@@ -46,7 +46,7 @@ flowchart LR
     Svc -.->|HTTP| Whl
 ```
 
-The browser never holds the access token — it lives in an `oms_access` cookie that only server-side code reads. Client components hit `/api/proxy/<backend-path>`; the Next.js route handler attaches the Bearer header and forwards to Spring. No CORS, no token-in-localStorage, no token in request URLs.
+The browser never holds the access token directly. It lives in an `oms_access` cookie that only server-side code reads. Client components hit `/api/proxy/<backend-path>`; the Next.js route handler attaches the Bearer header and forwards to Spring. No CORS, no `localStorage` token, no token in URLs.
 
 ---
 
@@ -82,7 +82,7 @@ sequenceDiagram
     end
 ```
 
-The backend is the source of truth on stock + profitability — the UI doesn't pre-validate, it just surfaces the `ProblemDetail.detail` on rejection.
+The backend is the source of truth on stock and profitability. The UI doesn't try to pre-validate; it just surfaces `ProblemDetail.detail` when the backend rejects a request.
 
 ---
 
@@ -134,7 +134,7 @@ order-management-system/
 
 ## Running locally
 
-### Option 1 — full stack in Docker
+### Option 1: full stack in Docker
 
 ```bash
 docker compose up --build
@@ -146,7 +146,7 @@ Then visit:
 - API docs: http://localhost:8080/swagger-ui.html
 - Postgres: `localhost:5432` (user `postgres` / db `oms`)
 
-### Option 2 — just the database, app in your IDE
+### Option 2: just the database, app in your IDE
 
 ```bash
 docker compose up -d postgres
@@ -184,23 +184,23 @@ The seeder is gated by `app.seed.enabled: true` in dev; `prod` disables it.
 cd backend && ./mvnw verify
 ```
 
-Testcontainers starts a Postgres instance on the fly for the integration test — Docker Desktop must be running. JaCoCo `check` fails the build below 55 % line / 30 % branch coverage. The thresholds ratchet up once more integration tests land.
+Testcontainers spins up a fresh Postgres for the integration test, so Docker Desktop needs to be running. JaCoCo's `check` rule fails the build below 55% line / 30% branch coverage; the thresholds ratchet up as more integration tests land.
 
 ```bash
 # Frontend: TypeScript + lint + production build
 cd frontend && npm run lint && npm run build
 ```
 
-`next build` performs the TypeScript compile pass — a clean build is the type-safety gate.
+`next build` does the TypeScript compile pass, so a clean build doubles as the type-safety check.
 
 ---
 
 ## Security notes
 
-- Access tokens are **HS256**, 15 min TTL, readable by server code (cookie `oms_access`, not HttpOnly — server components need to forward it).
-- Refresh tokens are **opaque + HttpOnly** (cookie `oms_refresh`), stored hashed in Postgres and rotated on every refresh. Compromise of the DB doesn't grant a valid refresh token.
-- `APP_JWT_SECRET` must be ≥ 32 chars in production. The compose default is clearly flagged as dev-only; real deployments should inject via env file or secrets manager.
-- Client JS never sees the access token — the authenticated-proxy pattern at `/api/proxy/[...path]` keeps it server-side.
+- Access tokens are **HS256** with a 15 minute TTL, readable by server code (cookie `oms_access`, not HttpOnly because server components need to forward it).
+- Refresh tokens are **opaque + HttpOnly** (cookie `oms_refresh`), stored hashed in Postgres and rotated on every refresh, so a database leak doesn't yield a usable refresh token.
+- `APP_JWT_SECRET` must be at least 32 characters in production. The compose default is flagged as dev-only; real deployments should inject the secret via env file or secrets manager.
+- Client JS never sees the access token. The authenticated-proxy pattern at `/api/proxy/[...path]` keeps it server-side.
 - All endpoints under `/operator/**` require `ROLE_OPERATOR`; `/customers/{id}/orders` enforces `customerId == principal.customerId`.
 
 ---

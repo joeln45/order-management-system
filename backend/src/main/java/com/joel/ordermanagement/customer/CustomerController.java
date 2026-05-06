@@ -55,12 +55,12 @@ public class CustomerController {
     private final OrderService orderService;
 
     // ------------------------------------------------------------
-    // Product endpoints — public
+    // Product endpoints (public)
     // ------------------------------------------------------------
 
     @GetMapping("/products")
     @Tag(name = "Products")
-    @SecurityRequirements({})  // public endpoint — no bearer token required
+    @SecurityRequirements({})  // public endpoint, no bearer token required
     @Operation(summary = "List all products", description = "Returns the full catalogue with HATEOAS self-links.")
     @ApiResponse(responseCode = "200", description = "Product list")
     public ResponseEntity<CollectionModel<EntityModel<Product>>> getAllProducts() {
@@ -97,7 +97,7 @@ public class CustomerController {
     }
 
     // ------------------------------------------------------------
-    // Order endpoints — require ROLE_CUSTOMER
+    // Order endpoints (require ROLE_CUSTOMER)
     // ------------------------------------------------------------
 
     @PostMapping("/orders")
@@ -107,7 +107,7 @@ public class CustomerController {
             description = """
                     Validates customer existence, per-line product existence, stock availability
                     at the wholesaler, and profitability against the current wholesale price.
-                    Whole request is one DB transaction — partial orders can't land.
+                    Whole request is one DB transaction; partial orders can't land.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Order created"),

@@ -8,7 +8,7 @@ import type { AuthResponse } from "@/lib/types";
  * the JSON token response into cookies:
  *   - oms_access  (readable by server code, 15 min)
  *   - oms_refresh (HttpOnly, 7 days)
- *   - oms_user    (readable — so the nav can show username/role without decoding the JWT)
+ *   - oms_user    (readable, so the nav can show username/role without decoding the JWT)
  *
  * Proxying like this keeps the backend URL out of the browser's history and
  * lets us mark the refresh token HttpOnly, which JS fetch on the client cannot do.

@@ -16,14 +16,14 @@ export default async function ProductsPage() {
     errorMessage =
       e instanceof ApiError
         ? `${e.problem.title ?? "Error"}: ${e.problem.detail ?? ""}`
-        : "Could not reach the backend — is it running on :8080?";
+        : "Could not reach the backend: is it running on :8080?";
   }
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
       <h1 className="text-2xl font-semibold">Products</h1>
       <p className="mt-1 text-sm text-gray-600">
-        Live catalogue — synced from the wholesaler at application startup.
+        Live catalogue, synced from the wholesaler at application startup.
       </p>
 
       {errorMessage && (
@@ -37,8 +37,8 @@ export default async function ProductsPage() {
 
       {!errorMessage && products.length === 0 && (
         <p className="mt-6 text-gray-600">
-          No products loaded yet. The wholesaler sync runs once at startup — if
-          you just booted the backend, give it a few seconds and refresh.
+          No products loaded yet. The wholesaler sync runs once at startup,
+          so if you just booted the backend, give it a few seconds and refresh.
         </p>
       )}
 

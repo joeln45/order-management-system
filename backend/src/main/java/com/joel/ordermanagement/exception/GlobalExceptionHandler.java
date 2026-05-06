@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
     // Spring / validation exceptions
     // ------------------------------------------------------------
 
-    /** Bean validation failures (@Valid) — builds a field-by-field error map. */
+    /** Bean validation failures (@Valid): builds a field-by-field error map. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ProblemDetail> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
         Map<String, String> errors = new LinkedHashMap<>();
@@ -71,7 +71,7 @@ public class GlobalExceptionHandler {
                 "Request body is missing or not valid JSON", req, "malformed-request");
     }
 
-    /** Spring Security — authenticated but lacks the required role. */
+    /** Spring Security: authenticated but lacks the required role. */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex, HttpServletRequest req) {
         return problem(HttpStatus.FORBIDDEN, "Forbidden", "You do not have permission to access this resource",

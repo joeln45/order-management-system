@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Incoming body for {@code POST /orders}. A single request can contain many
- * products — the cart-style checkout added in Phase 3. {@code @Valid} on the
+ * products: the cart-style checkout added in Phase 3. {@code @Valid} on the
  * {@link LineItem} list instructs the validator to recurse into each element
  * so per-line field rules are enforced too.
  */

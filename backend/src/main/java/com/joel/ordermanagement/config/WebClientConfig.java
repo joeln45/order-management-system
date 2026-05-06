@@ -14,18 +14,13 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A single shared {@link WebClient} bean for all outbound HTTP — currently
- * just the wholesaler, but set up so the same instance can be reused when
- * we add more integrations later.
- * <p>
- * Timeouts are explicit at two levels:
- * <ul>
- *   <li><b>Connect</b> — how long Netty will wait for the TCP handshake.</li>
- *   <li><b>Read/Write/Response</b> — how long it will wait for bytes after
- *       the connection is open.</li>
- * </ul>
- * Retries are applied per-call by {@link com.joel.ordermanagement.wholesaler.WholesalerClient}
- * so different endpoints can use different policies.
+ * Shared WebClient bean for outbound HTTP. Right now it only carries the
+ * wholesaler traffic, but future integrations can reuse the same instance.
+ *
+ * Two timeout knobs are wired in: a connect timeout for the TCP handshake,
+ * and a response/read/write timeout for waiting on bytes once the
+ * connection is open. Retry policy is applied per-call by WholesalerClient
+ * rather than here, so different endpoints can pick different rules.
  */
 @Configuration
 public class WebClientConfig {

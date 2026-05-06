@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 /**
  * A single line in a customer order: which product, how many, at what price.
  * <p>
- * {@code priceAtPurchase} is the critical field — it freezes the retail price
+ * {@code priceAtPurchase} is the critical field: it freezes the retail price
  * at the moment of sale so that later price changes can't rewrite historical
  * order totals or revenue figures.
  */
@@ -42,7 +42,7 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    /** Owning side of the relationship — the FK lives in this table. */
+    /** Owning side of the relationship: the FK lives in this table. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;

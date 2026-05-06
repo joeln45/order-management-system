@@ -31,7 +31,7 @@ export async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promis
       ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
       ...headers,
     },
-    // Disable Next's fetch cache for API calls — data is dynamic per-user.
+    // Disable Next's fetch cache for API calls; data is dynamic per-user.
     cache: "no-store",
   });
 

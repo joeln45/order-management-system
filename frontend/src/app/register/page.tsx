@@ -8,7 +8,7 @@ import { useState, type FormEvent } from "react";
  * Customer self-registration form.
  * Submits to /api/auth/register which proxies to Spring's POST /auth/register,
  * sets the auth cookies, and returns the new user info. On success we redirect
- * straight to /orders — the user is immediately signed in.
+ * straight to /orders; the user is immediately signed in.
  *
  * Field validation runs on the backend (Spring Bean Validation); the frontend
  * surfaces the `errors` map from the RFC 7807 ProblemDetail response.
@@ -64,11 +64,11 @@ export default function RegisterPage() {
         return;
       }
 
-      // Cookies are set by the route handler — we're immediately signed in.
+      // Cookies are set by the route handler; we're immediately signed in.
       router.push("/orders");
       router.refresh();
     } catch {
-      setGlobalError("Network error — is the backend running?");
+      setGlobalError("Network error: is the backend running?");
     } finally {
       setSubmitting(false);
     }

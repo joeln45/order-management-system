@@ -1,7 +1,5 @@
-# ==============================================================
-# Dev profile — H2 in-memory DB for fast iteration with no external dependencies.
-# Activated by default (see application.yml: spring.profiles.default).
-# ==============================================================
+# Dev profile: H2 in-memory DB for fast iteration, no external deps.
+# Activated by default via spring.profiles.default in application.yml.
 spring:
   datasource:
     url: jdbc:h2:mem:ordermanagement;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
@@ -12,7 +10,7 @@ spring:
   jpa:
     hibernate:
       # 'validate' = fail at startup if entity classes don't match the DB schema.
-      # The schema itself is owned by Flyway migrations — Hibernate must not auto-generate.
+      # The schema is owned by Flyway migrations; Hibernate must not auto-generate.
       ddl-auto: validate
     show-sql: true
 

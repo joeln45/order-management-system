@@ -17,14 +17,14 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Per-request JWT parser. Extracts the bearer token from the {@code Authorization}
- * header, verifies it, and — on success — populates {@link SecurityContextHolder}
- * with an {@link org.springframework.security.core.Authentication}. Downstream
- * URL rules ({@code hasRole(...)}) then decide if the request can proceed.
- * <p>
- * If there's no token, or it's invalid, we simply do nothing — Spring's later
- * {@code AuthorizationFilter} sees an unauthenticated context and returns 401/403
- * for anything that isn't on the public allow-list.
+ * Per-request JWT parser. Pulls the bearer token off the Authorization
+ * header, verifies it, and on success puts an Authentication on the
+ * SecurityContext. The downstream hasRole(...) rules then decide whether
+ * the request goes through.
+ *
+ * If there's no token or it's invalid we do nothing here; Spring's later
+ * AuthorizationFilter will see an unauthenticated context and 401/403
+ * anything that isn't on the public allow-list.
  */
 @Component
 @RequiredArgsConstructor
@@ -55,8 +55,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String username = jwt.getClaim("username").asString();
         String userId = jwt.getSubject();
 
-        // Spring Security convention: role names are prefixed ROLE_ when
-        // stored as GrantedAuthority but NOT when referenced via hasRole("X").
+        // Spring Security convention: role names get a ROLE_ prefix when
+        // stored as a GrantedAuthority, but not when used in hasRole("X").
         var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
 
         var auth = new UsernamePasswordAuthenticationToken(userId, null, authorities);

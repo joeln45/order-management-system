@@ -15,7 +15,7 @@ import java.time.Duration;
  * Scope: outbound wholesaler responses only. Catalogue prices barely change
  * minute-to-minute, and every {@code createOrder} call would otherwise hit
  * the wholesaler twice per line item (stock + profitability). Caching drops
- * this to once per 5-minute window per product — massive reduction in
+ * this to once per 5-minute window per product, a massive reduction in
  * wholesaler load and p99 latency.
  */
 @Configuration

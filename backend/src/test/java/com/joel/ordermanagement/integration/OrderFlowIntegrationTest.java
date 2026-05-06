@@ -32,21 +32,15 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Full-stack integration test — boots the whole Spring Boot app on a random
- * port, backed by a real PostgreSQL in Docker (Testcontainers) and a WireMock
- * fake wholesaler. No mocks of our own classes; everything wired as in prod.
- * <p>
- * What this buys us over the slice tests:
- * <ul>
- *   <li>Real Flyway migrations execute against real Postgres — catches
- *       H2-vs-Postgres drift.</li>
- *   <li>Real {@code SecurityFilterChain} runs — proves 401/403 actually happen
- *       (slice tests disable filters).</li>
- *   <li>Real JWT issue → verify round-trip over HTTP.</li>
- * </ul>
+ * End-to-end test that boots the whole app on a random port against a real
+ * PostgreSQL container (Testcontainers) and a WireMock stand-in for the
+ * wholesaler. Nothing is mocked at the Spring level.
  *
- * <p><b>Prerequisite:</b> Docker Desktop (or compatible) must be running,
- * otherwise Testcontainers will abort startup.
+ * Slice tests cover the controller/service layers; this one exercises the
+ * Flyway migrations on real Postgres, the actual SecurityFilterChain, and
+ * a JWT round-trip over HTTP.
+ *
+ * Requires Docker to be running.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -54,17 +48,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestMethodOrder(org.junit.jupiter.api.MethodOrderer.OrderAnnotation.class)
 class OrderFlowIntegrationTest {
 
-    /**
-     * Singleton-container pattern. We deliberately do NOT use {@code @Testcontainers}
-     * + {@code @Container} here, because that lifecycle starts the container in
-     * JUnit's {@code beforeAll} — which fires AFTER Spring's
-     * {@code @ServiceConnection} resolution tries to read {@code getJdbcUrl()}.
-     * Result: "Mapped port can only be obtained after the container is started".
-     * <p>
-     * Starting the container in a static initializer guarantees it's running
-     * before the class is even touched by JUnit or Spring. The JVM shuts it
-     * down via Testcontainers' own Ryuk reaper at the end of the test run.
-     */
+    // Started in a static initializer rather than via @Testcontainers/@Container
+    // because @ServiceConnection asks for the JDBC URL during context loading,
+    // which happens before JUnit's beforeAll. Cleanup is handled by the Ryuk
+    // reaper when the JVM exits.
     @ServiceConnection
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:16-alpine")
@@ -76,18 +63,14 @@ class OrderFlowIntegrationTest {
         POSTGRES.start();
     }
 
-    /**
-     * WireMock must also be started in a static block — for the same reason
-     * Postgres is. {@code @DynamicPropertySource} reads {@code wireMock.baseUrl()}
-     * while loading the Spring context, which happens before any
-     * {@code @BeforeAll} method runs.
-     */
+    // Same story as Postgres above: @DynamicPropertySource reads baseUrl()
+    // during context loading, before @BeforeAll would run.
     static final WireMockServer wireMock =
             new WireMockServer(wireMockConfig().dynamicPort());
 
     static {
         wireMock.start();
-        // Any /product/** call → return a generic "in-stock, profitable" payload.
+        // Generic stub: any /product/* returns an in-stock, profitable item.
         wireMock.stubFor(get(urlPathMatching("/product/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -107,19 +90,16 @@ class OrderFlowIntegrationTest {
 
     @DynamicPropertySource
     static void wireProperties(DynamicPropertyRegistry r) {
-        // DataSource URL/user/pass/driver are now provided by @ServiceConnection.
-        // We only need to configure the bits Spring can't infer from the container.
+        // JDBC details come from @ServiceConnection; we only override what
+        // Spring can't infer from the container.
         r.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
         r.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         r.add("spring.flyway.enabled", () -> "true");
 
-        // Point the wholesaler client at WireMock, not pythonanywhere
         r.add("wholesaler.base-url", () -> wireMock.baseUrl());
-
-        // Disable the user seeder — tests register their own users explicitly
         r.add("app.seed.enabled", () -> "false");
 
-        // Deterministic JWT secret (≥ 32 chars, as JwtService enforces)
+        // 32+ char secret required by JwtService.
         r.add("app.jwt.secret",
                 () -> "integration-test-secret-padding-to-meet-32-char-minimum");
     }
@@ -127,14 +107,10 @@ class OrderFlowIntegrationTest {
     @LocalServerPort int port;
     @Autowired TestRestTemplate rest;
 
-    // ------------------------------------------------------------
-    // The full flow
-    // ------------------------------------------------------------
-
     @Test
     @Order(1)
     void register_thenLogin_thenRefresh_roundTripsTokens() {
-        // --- register ---
+        // register
         RegisterRequest reg = new RegisterRequest();
         reg.setUsername("alice-int");
         reg.setPassword("s3cret-password");
@@ -149,7 +125,7 @@ class OrderFlowIntegrationTest {
         assertThat(regResp.getBody().get("accessToken").asText()).isNotBlank();
         assertThat(regResp.getBody().get("role").asText()).isEqualTo("CUSTOMER");
 
-        // --- login ---
+        // login
         LoginRequest login = new LoginRequest();
         login.setUsername("alice-int");
         login.setPassword("s3cret-password");
@@ -161,9 +137,9 @@ class OrderFlowIntegrationTest {
         String access = loginResp.getBody().get("accessToken").asText();
         assertThat(access).isNotBlank();
 
-        // --- use the token on an authenticated endpoint ---
-        // GET /orders/{id} is authenticated; unknown id → 404 (proves the token
-        // passed through the security filter before the handler ran).
+        // Use the token on an authenticated endpoint. An unknown id should
+        // give 404, which means the token cleared the security filter and
+        // reached the handler.
         ResponseEntity<JsonNode> orderResp = rest.exchange(
                 url("/orders/does-not-exist"),
                 HttpMethod.GET,
@@ -177,10 +153,8 @@ class OrderFlowIntegrationTest {
     @Test
     @Order(2)
     void postOrders_withoutToken_isRejected() {
-        // Spring Security's CSRF filter rejects an unauthenticated POST with
-        // 403 (not 401) — the CSRF check runs before the auth chain decides
-        // "is the user logged in?". Either status proves the endpoint isn't
-        // open; we accept both to be robust against config changes.
+        // Spring Security's CSRF filter rejects unauthenticated POSTs with 403
+        // before the auth chain even runs, so accept either 401 or 403.
         ResponseEntity<JsonNode> r = rest.postForEntity(
                 url("/orders"),
                 new HttpEntity<>("{\"customerId\":\"x\",\"items\":[]}", jsonHeaders()),
@@ -192,7 +166,7 @@ class OrderFlowIntegrationTest {
     @Test
     @Order(3)
     void operator_endpoint_withCustomerRole_returns403() {
-        // Re-login the customer we registered in test #1
+        // re-login the customer registered in test #1
         LoginRequest login = new LoginRequest();
         login.setUsername("alice-int");
         login.setPassword("s3cret-password");
@@ -213,14 +187,10 @@ class OrderFlowIntegrationTest {
     void products_publicEndpoint_noTokenNeeded() {
         ResponseEntity<JsonNode> r = rest.getForEntity(url("/products"), JsonNode.class);
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
-        // catalogue is empty in the test DB — we only assert the envelope links
+        // catalogue is empty in the test DB, so just check the envelope
         assertThat(r.getBody().get("_links").get("self").get("href").asText())
                 .contains("/products");
     }
-
-    // ------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------
 
     private String url(String path) {
         return "http://localhost:" + port + path;

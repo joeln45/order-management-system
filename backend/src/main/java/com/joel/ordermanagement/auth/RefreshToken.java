@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 /**
  * Server-side record of an issued refresh token.
  * <p>
- * The raw token string never lives in the database — only its SHA-256 hash.
+ * The raw token string never lives in the database; only its SHA-256 hash.
  * Same principle as password storage: a DB dump shouldn't hand the attacker
  * a stack of valid tokens. Revocation = delete this row.
  */

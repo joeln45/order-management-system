@@ -10,16 +10,14 @@ import type {
 } from "@/lib/types";
 
 /**
- * Interactive slab of the operator page. Handles three concerns:
- *   1. Change an order's status via PUT /operator/orders/{id}/status
- *   2. Edit a product's retail price via PUT /operator/products/{id}/price
- *   3. Look up a customer's lifetime revenue via GET /operator/customers/{id}/revenue
+ * Client-side bits of the operator page. Three things happen here:
+ *   1. Change an order's status (PUT /operator/orders/{id}/status)
+ *   2. Edit a product's retail price (PUT /operator/products/{id}/price)
+ *   3. Look up a customer's lifetime revenue (GET /operator/customers/{id}/revenue)
  *
- * All three go through `/api/proxy/...` so the browser never sees the token.
- *
- * Customers are passed in from the server component so the revenue lookup
- * can render a dropdown instead of a free-text field — no typos, no
- * "customer not found" guessing.
+ * All requests go through /api/proxy/* so the access token stays on the
+ * server side. The customers list is passed in from the server component
+ * so the revenue lookup can be a dropdown rather than a free-text field.
  */
 const STATUSES: OrderStatus[] = [
   "PENDING",
@@ -144,8 +142,8 @@ export function OperatorDashboard({
                         {customerName}
                       </span>{" "}
                       <span className="text-gray-400">({o.customerId})</span>{" "}
-                      — {o.items.length} item
-                      {o.items.length === 1 ? "" : "s"} — Total £
+                      · {o.items.length} item
+                      {o.items.length === 1 ? "" : "s"} · Total £
                       {o.total.toFixed(2)}
                     </p>
                     {o.orderDate && (
@@ -212,7 +210,7 @@ export function OperatorDashboard({
         )}
       </section>
 
-      {/* Revenue lookup — dropdown of seeded customers, no free-text. */}
+      {/* Revenue lookup. Dropdown of seeded customers, no free-text. */}
       <section>
         <h2 className="text-lg font-semibold">Customer revenue</h2>
         <p className="mt-1 text-xs text-gray-500">

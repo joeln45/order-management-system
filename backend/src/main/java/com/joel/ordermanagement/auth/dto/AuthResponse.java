@@ -21,7 +21,7 @@ public class AuthResponse {
             example = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIi...")
     private String accessToken;
 
-    @Schema(description = "Opaque refresh token (7 days). Single-use — rotated on every /auth/refresh.",
+    @Schema(description = "Opaque refresh token (7 days). Single-use, rotated on every /auth/refresh.",
             example = "xR3kP9qL...base64url-32-bytes")
     private String refreshToken;
 
@@ -34,11 +34,11 @@ public class AuthResponse {
     @Schema(description = "Role assigned to the user", example = "OPERATOR")
     private Role role;
 
-    @Schema(description = "Business customer id linked to this account — null for operators",
+    @Schema(description = "Business customer id linked to this account; null for operators",
             example = "CUST001", nullable = true)
     private String customerId;
 
-    @Schema(description = "Display name of the linked customer profile — null for operators",
+    @Schema(description = "Display name of the linked customer profile; null for operators",
             example = "Demo Customer", nullable = true)
     private String customerName;
 }

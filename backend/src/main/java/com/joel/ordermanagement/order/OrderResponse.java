@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Public API shape for an Order — flattens the JPA entity graph into
+ * Public API shape for an Order, flattening the JPA entity graph into
  * a stable JSON contract with nested line items and a computed total.
  */
 @Data

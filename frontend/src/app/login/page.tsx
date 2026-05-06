@@ -29,7 +29,7 @@ export default function LoginPage() {
       router.push(role === "OPERATOR" ? "/operator" : "/products");
       router.refresh();
     } catch {
-      setError("Network error — is the backend running on :8080?");
+      setError("Network error: is the backend running on :8080?");
     } finally {
       setSubmitting(false);
     }

@@ -5,10 +5,10 @@ import { useState } from "react";
 import type { Product } from "@/lib/types";
 
 /**
- * Lets a customer build an order line-by-line. Each row picks a product and
- * quantity; submission POSTs to `/api/proxy/orders` which forwards to Spring.
- * The backend is the source of truth on stock + profitability — any rejection
- * surfaces here via the ProblemDetail body.
+ * Lets a customer build an order line-by-line. Each row picks a product
+ * and a quantity; submitting POSTs to /api/proxy/orders, which forwards
+ * to Spring. The backend has the final say on stock and profitability;
+ * any rejection comes back as a ProblemDetail and is surfaced here.
  */
 type Line = { productId: string; quantity: number };
 
@@ -74,7 +74,7 @@ export function NewOrderForm({
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        // Backend returns RFC 7807 — prefer detail, fall back to title.
+        // Backend returns RFC 7807; prefer detail, fall back to title.
         setError(body.detail ?? body.title ?? `Order failed (${res.status})`);
         return;
       }
@@ -91,7 +91,7 @@ export function NewOrderForm({
   if (products.length === 0) {
     return (
       <p className="rounded bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        No products in the catalogue yet — ask an operator to seed data.
+        No products in the catalogue yet. Ask an operator to seed data.
       </p>
     );
   }
@@ -115,7 +115,7 @@ export function NewOrderForm({
               >
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.description} — £{p.retailPrice.toFixed(2)}
+                    {p.description} · £{p.retailPrice.toFixed(2)}
                   </option>
                 ))}
               </select>

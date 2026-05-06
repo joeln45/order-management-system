@@ -144,14 +144,15 @@
 		</dependency>
 
 		<!--
-			Testcontainers: spins up a throw-away PostgreSQL in Docker per test
-			class. Gives the integration test a real Postgres instance (matching
-			prod) without needing a locally installed server.
+			Testcontainers: spins up a throw-away PostgreSQL in Docker per
+			test class so the integration test gets a real Postgres instance
+			matching prod, without needing a locally installed server.
 
-			spring-boot-testcontainers provides @ServiceConnection — it auto-wires
-			the container's JDBC URL into Spring AFTER the container has started,
-			avoiding the classic "Mapped port can only be obtained after the
-			container is started" trap that hits @DynamicPropertySource.
+			spring-boot-testcontainers gives us @ServiceConnection, which
+			auto-wires the container's JDBC URL into Spring after the
+			container has started. Without it, @DynamicPropertySource trips
+			over "Mapped port can only be obtained after the container is
+			started".
 		-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -241,8 +242,8 @@
 						HTTP client, retry code, and security filter chain are
 						only exercised end-to-end by OrderFlowIntegrationTest.
 						When Docker is available the integration test lifts real
-						coverage to ~75% line / ~55% branch — ratchet the floors
-						upward once it runs consistently in CI.
+						coverage to about 75% line / 55% branch. Ratchet the
+						floors upward once it runs consistently in CI.
 					-->
 					<execution>
 						<id>check</id>

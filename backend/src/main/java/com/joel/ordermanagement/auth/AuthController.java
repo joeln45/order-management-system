@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @CrossOrigin
 @Tag(name = "Authentication", description = "Register, log in, rotate refresh tokens, and log out")
-@SecurityRequirements({})  // entire controller is public — override the global bearer requirement
+@SecurityRequirements({})  // entire controller is public; override the global bearer requirement
 public class AuthController {
 
     private final AuthService authService;
@@ -76,7 +76,7 @@ public class AuthController {
             summary = "Rotate the refresh token",
             description = """
                     Exchanges a valid refresh token for a new access + refresh token pair.
-                    The old refresh token is revoked (one-time-use) — detect token theft by
+                    The old refresh token is revoked (one-time-use); detect token theft by
                     watching for refresh attempts with an already-rotated token.
                     """)
     @ApiResponses({

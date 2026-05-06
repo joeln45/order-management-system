@@ -47,7 +47,7 @@ public class WholesalerService {
         if (isDemoProduct(wholesalerId)) {
             // Back-calculate from the known retail price seed so profitability always holds.
             // We don't have the retail price here, so return a non-null sentinel that the
-            // caller (OrderService) will compare against retailPrice — returning a very small
+            // caller (OrderService) will compare against retailPrice; returning a very small
             // value ensures retail > wholesale (i.e. profitable) for any seeded price.
             return new BigDecimal("0.01");
         }

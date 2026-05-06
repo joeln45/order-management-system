@@ -32,16 +32,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link AuthService}. All collaborators are mocked. Key things
- * these tests lock down:
- * <ul>
- *   <li>Passwords go through {@link PasswordEncoder} (never stored plain).</li>
- *   <li>Refresh tokens are stored only as SHA-256 hashes (never the raw value).</li>
- *   <li>{@code refresh()} rotates — the old token row is deleted before the new
- *       pair is issued.</li>
- *   <li>Wrong password / unknown user / disabled user all collapse to the same
- *       "Invalid credentials" response so we don't leak user existence.</li>
- * </ul>
+ * Unit tests for AuthService with all collaborators mocked. The main
+ * invariants pinned down here: passwords always go through PasswordEncoder
+ * (never stored as plaintext), refresh tokens are stored only as SHA-256
+ * hashes, refresh() deletes the old row before issuing the new pair, and
+ * wrong-password / unknown-user / disabled-user all return the same
+ * "Invalid credentials" so we don't leak which usernames exist.
  */
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -61,17 +57,13 @@ class AuthServiceTest {
         customerUser = new User("alice", "bcrypt-hash", Role.CUSTOMER);
         customerUser.setId("user-1");
 
-        // Common JwtService stubs — some tests short-circuit before using them,
-        // so mark lenient() to keep Mockito's strict stubbing detector quiet.
+        // Some tests short-circuit before touching these, so mark lenient()
+        // to keep Mockito's strict stubbing detector quiet.
         lenient().when(jwtService.issueAccessToken(any(User.class))).thenReturn("fake.access.jwt");
         lenient().when(jwtService.generateRefreshTokenRaw()).thenReturn("fake-raw-refresh-42");
         lenient().when(jwtService.getAccessTtl()).thenReturn(Duration.ofMinutes(15));
         lenient().when(jwtService.getRefreshTtl()).thenReturn(Duration.ofDays(7));
     }
-
-    // =============================================================
-    // register
-    // =============================================================
 
     @Nested
     @DisplayName("register")
@@ -138,10 +130,6 @@ class AuthServiceTest {
         }
     }
 
-    // =============================================================
-    // login
-    // =============================================================
-
     @Nested
     @DisplayName("login")
     class Login {
@@ -194,10 +182,6 @@ class AuthServiceTest {
             verify(refreshTokenRepository, never()).save(any());
         }
     }
-
-    // =============================================================
-    // refresh
-    // =============================================================
 
     @Nested
     @DisplayName("refresh")
@@ -263,10 +247,6 @@ class AuthServiceTest {
         }
     }
 
-    // =============================================================
-    // logout
-    // =============================================================
-
     @Nested
     @DisplayName("logout")
     class Logout {
@@ -286,7 +266,7 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("is idempotent — silently ignores unknown tokens")
+        @DisplayName("is idempotent: silently ignores unknown tokens")
         void logout_unknownToken_silent() {
             when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.empty());
 
@@ -306,10 +286,6 @@ class AuthServiceTest {
             verify(refreshTokenRepository, never()).delete(any());
         }
     }
-
-    // =============================================================
-    // sha256Hex
-    // =============================================================
 
     @Test
     @DisplayName("sha256Hex is deterministic and produces a 64-char hex string")

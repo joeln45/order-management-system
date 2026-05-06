@@ -20,13 +20,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Central security configuration.
- * <ul>
- *   <li>Stateless — no sessions, every request carries its own bearer token.</li>
- *   <li>CSRF disabled — safe because we don't use cookies for auth.</li>
- *   <li>URL rules: public (auth, product browsing, swagger, h2) → customer → operator.</li>
- *   <li>{@link JwtAuthFilter} runs before the username/password filter slot.</li>
- * </ul>
+ * Stateless JWT-based security. No sessions, no CSRF (we don't use cookies
+ * for auth). URL rules go: public bits (auth, product browsing, swagger,
+ * h2) → customer → operator. The JwtAuthFilter slots in before the
+ * username/password filter.
  */
 @Configuration
 @EnableMethodSecurity
@@ -44,23 +41,22 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.frameOptions(f -> f.sameOrigin()))   // allow H2 console iframe
                 .authorizeHttpRequests(auth -> auth
-                        // --- Public ---
+                        // public
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products", "/products/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
-                        // --- Operator-only ---
+                        // operator-only
                         .requestMatchers("/operator/**").hasRole("OPERATOR")
 
-                        // --- Customer-facing (authenticated) ---
+                        // customer-facing (authenticated)
                         .requestMatchers(HttpMethod.POST,   "/orders").hasRole("CUSTOMER")
                         .requestMatchers(HttpMethod.GET,    "/orders/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/orders/**").hasRole("CUSTOMER")
                         .requestMatchers("/customers/**").authenticated()
 
-                        // Everything else needs auth.
                         .anyRequest().authenticated())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -75,8 +71,9 @@ public class SecurityConfig {
     }
 
     /**
-     * Permissive CORS for local dev — production should lock this down to the
-     * real frontend origin via env var / profile override.
+     * Permissive CORS so the local dev frontends (Next.js on 3000, Vite on
+     * 5173) can hit the API. In production this should be locked down to
+     * the real origin via a profile override.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

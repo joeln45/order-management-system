@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link OrderService}. All collaborators are mocked — no Spring,
+ * Unit tests for {@link OrderService}. All collaborators are mocked: no Spring,
  * no database, no HTTP. Execution is sub-millisecond per test, so every branch
  * of the business logic gets its own case.
  *
@@ -191,7 +191,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("fails the entire order if any one line is invalid (transactional atomicity)")
         void createOrder_oneInvalidLine_rollsBackAll() {
-            // drill is fine, saw is out of stock — whole order must fail.
+            // drill is fine, saw is out of stock, so the whole order must fail.
             when(customerRepository.findById("CUST001")).thenReturn(Optional.of(customer));
             when(productRepository.findById("prod-drill")).thenReturn(Optional.of(drill));
             when(productRepository.findById("prod-saw")).thenReturn(Optional.of(saw));

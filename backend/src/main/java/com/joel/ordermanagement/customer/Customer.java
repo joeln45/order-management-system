@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
  * <p>
  * Phase 4 splits auth from profile: a Customer *may* be linked to a {@link User}
  * row via {@code user_id}. The three assignment-seeded customers (CUST001-003)
- * are legacy demo data and have no user — they cannot log in.
+ * are legacy demo data and have no user; they cannot log in.
  */
 @Entity
 @Table(name = "customers")

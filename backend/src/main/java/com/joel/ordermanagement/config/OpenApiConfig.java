@@ -14,20 +14,15 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * OpenAPI 3 / Swagger UI configuration.
+ * OpenAPI 3 / Swagger UI setup. springdoc picks up endpoints, request
+ * bodies, and response shapes from the controllers automatically. This
+ * bean fills in what it can't infer: title/contact/server URL, plus the
+ * JWT bearer scheme so Swagger UI's "Authorize" button can attach
+ * Authorization headers to "Try it out" requests.
  *
- * <p>springdoc auto-discovers endpoints, request bodies, and response shapes
- * from our controllers. This bean only supplies the metadata that can't be
- * inferred from code: branding, contact info, server URL, and — most
- * importantly — the JWT bearer-token security scheme so the Swagger UI
- * "Authorize" button can attach {@code Authorization: Bearer ...} to
- * "Try it out" calls.
- *
- * <p>Browse the live docs at:
- * <ul>
- *   <li>{@code http://localhost:8080/swagger-ui.html} — interactive UI</li>
- *   <li>{@code http://localhost:8080/v3/api-docs}     — raw JSON spec</li>
- * </ul>
+ * Live docs:
+ *   /swagger-ui.html   interactive UI
+ *   /v3/api-docs       raw JSON spec
  */
 @Configuration
 public class OpenApiConfig {
@@ -42,8 +37,8 @@ public class OpenApiConfig {
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("Local dev")
                 ))
-                // Global default: every endpoint requires a bearer token in the UI.
-                // Public endpoints opt out with @SecurityRequirements({}) on the method.
+                // Default to "needs bearer token" in the UI; public endpoints
+                // opt out with @SecurityRequirements({}) on the method.
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH))
                 .components(new Components()
                         .addSecuritySchemes(BEARER_AUTH, bearerJwtScheme()));
@@ -71,11 +66,9 @@ public class OpenApiConfig {
                         .url("https://opensource.org/licenses/MIT"));
     }
 
-    /**
-     * HTTP bearer scheme with JWT format. Swagger UI renders this as an
-     * "Authorize" modal that accepts a raw JWT and injects it as
-     * {@code Authorization: Bearer <token>} on subsequent requests.
-     */
+    // HTTP bearer scheme with JWT format. Swagger UI renders this as an
+    // "Authorize" modal that accepts a raw JWT and injects it as
+    // Authorization: Bearer <token> on subsequent requests.
     private SecurityScheme bearerJwtScheme() {
         return new SecurityScheme()
                 .type(SecurityScheme.Type.HTTP)

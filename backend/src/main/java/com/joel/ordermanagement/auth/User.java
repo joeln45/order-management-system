@@ -20,7 +20,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 /**
- * Authentication identity — the "keycard" that a human (or operator) uses
+ * Authentication identity: the "keycard" that a human (or operator) uses
  * to log in. Deliberately stripped down to credentials + role; any
  * business-side profile data lives on {@code Customer}, linked via
  * {@code customer.user_id}.

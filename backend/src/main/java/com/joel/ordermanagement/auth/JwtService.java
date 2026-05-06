@@ -21,7 +21,7 @@ import java.util.Optional;
  * <p>
  * Access tokens: short-lived, self-contained, HMAC-SHA256 signed, include
  * {@code sub}, {@code role} and {@code iss}. Refresh tokens: 32 random bytes
- * base64-encoded — no structure, meaningless without the server-side record.
+ * base64-encoded, with no structure and meaningless without the server-side record.
  */
 @Slf4j
 @Service

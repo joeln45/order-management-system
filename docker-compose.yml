@@ -1,13 +1,11 @@
-# ==============================================================
-# Full-stack local orchestration:
-#   postgres  → database, named volume for persistence
-#   backend   → Spring Boot, waits for postgres healthcheck
-#   frontend  → Next.js standalone server, proxies to backend
+# Full-stack local orchestration.
+#   postgres  database, named volume for persistence
+#   backend   Spring Boot, waits for postgres healthcheck
+#   frontend  Next.js standalone server, proxies to backend
 #
 # Usage:
 #   docker compose up --build
 #   docker compose up -d postgres      # just the DB, run app in IDE
-# ==============================================================
 services:
   postgres:
     image: postgres:16-alpine
@@ -42,7 +40,7 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       # Must be >= 32 chars. Override in real deployments via an env file
-      # or your secrets manager — do not rely on this default.
+      # or your secrets manager. Don't rely on this default.
       APP_JWT_SECRET: ${APP_JWT_SECRET:-dev-only-secret-change-me-at-least-32-characters-long-please}
     ports:
       - "8080:8080"
@@ -55,8 +53,8 @@ services:
     depends_on:
       - backend
     environment:
-      # Server-side fetches go through the compose network; the browser
-      # never talks to the backend directly — it always hits /api/proxy.
+      # Server-side fetches go through the compose network. The browser
+      # never talks to the backend directly; it always goes via /api/proxy.
       API_URL: http://backend:8080
       NEXT_PUBLIC_API_URL: http://localhost:8080
     ports:

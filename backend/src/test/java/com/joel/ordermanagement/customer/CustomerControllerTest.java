@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Slice tests for {@link CustomerController}. Security filters disabled — we're
+ * Slice tests for {@link CustomerController}. Security filters are disabled; we're
  * testing request mapping, validation, HATEOAS envelope shape, and error
  * translation, not authorisation.
  */
@@ -102,7 +102,7 @@ class CustomerControllerTest {
     }
 
     // =============================================================
-    // POST /orders — validation
+    // POST /orders: validation
     // =============================================================
 
     @Test
@@ -193,7 +193,7 @@ class CustomerControllerTest {
 
     @Test
     void cancelOrder_nonPending_surfacesAs409() throws Exception {
-        org.mockito.Mockito.doThrow(new BusinessRuleException("Cannot cancel order — status is SHIPPED"))
+        org.mockito.Mockito.doThrow(new BusinessRuleException("Cannot cancel order: status is SHIPPED"))
                 .when(orderService).cancelOrder(anyString());
 
         mvc.perform(delete("/orders/ord-1"))

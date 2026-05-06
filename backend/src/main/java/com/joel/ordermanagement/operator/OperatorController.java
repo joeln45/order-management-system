@@ -40,7 +40,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * Operator-only REST API: manage orders, prices and analytics.
  * <p>
  * All authorisation is enforced upstream by
- * {@link com.joel.ordermanagement.config.SecurityConfig} — every request to
+ * {@link com.joel.ordermanagement.config.SecurityConfig}: every request to
  * {@code /operator/**} requires {@code ROLE_OPERATOR}. Login lives at
  * {@code /auth/login}; the response carries the role so the UI can decide
  * where to send the user next.
@@ -109,7 +109,7 @@ public class OperatorController {
     @PutMapping("/products/{id}/price")
     @Operation(
             summary = "Update a product's retail price",
-            description = "Does not affect the priceAtPurchase snapshot on existing orders — historical orders keep their old totals.")
+            description = "Does not affect the priceAtPurchase snapshot on existing orders; historical orders keep their old totals.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Price updated"),
             @ApiResponse(responseCode = "400", description = "Missing retailPrice in body"),
@@ -138,7 +138,7 @@ public class OperatorController {
     @GetMapping("/customers")
     @Operation(summary = "List all customers (id + name)",
                description = "Lightweight list for operator UIs (e.g. revenue dropdown). " +
-                             "Excludes contact/address details — those live behind /customers/{id}.")
+                             "Excludes contact/address details; those live behind /customers/{id}.")
     @ApiResponse(responseCode = "200", description = "All customers")
     public ResponseEntity<CollectionModel<CustomerSummary>> getAllCustomers() {
         List<CustomerSummary> summaries = customerRepository.findAll().stream()

@@ -1,4 +1,4 @@
-// Types mirroring the backend DTOs. Keep these in sync with the Java side —
+// Types mirroring the backend DTOs. Keep these in sync with the Java side:
 // when the backend adds/renames a field, TypeScript will tell us at compile
 // time exactly which components need updating.
 
@@ -14,7 +14,7 @@ export interface AuthResponse {
   role: Role;
   /** null for operators, set for customers. */
   customerId: string | null;
-  /** Display name from the customer profile — null for operators. */
+  /** Display name from the customer profile; null for operators. */
   customerName: string | null;
 }
 
@@ -54,7 +54,7 @@ export interface HateoasCollection<Key extends string, T> {
   _links: Record<string, { href: string }>;
 }
 
-// RFC 7807 problem detail — what GlobalExceptionHandler returns on errors.
+// RFC 7807 problem detail: what GlobalExceptionHandler returns on errors.
 export interface ProblemDetail {
   type?: string;
   title?: string;

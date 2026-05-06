@@ -21,12 +21,9 @@ import java.util.HexFormat;
 import java.util.UUID;
 
 /**
- * Registration, login, refresh and logout business logic.
- * <p>
- * {@link #register} atomically creates a {@link User} + linked {@link Customer}.
- * {@link #login} returns access + refresh tokens; refresh tokens are stored
- * only as SHA-256 hashes (never in the clear). {@link #refresh} rotates: the
- * old refresh row is deleted before a new pair is issued.
+ * Registration, login, refresh and logout. Refresh tokens are stored as
+ * SHA-256 hashes, never in the clear, and refresh rotates: the old row is
+ * deleted before a new pair is issued.
  */
 @Slf4j
 @Service
@@ -39,13 +36,10 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    // ------------------------------------------------------------
-    // Register — create User + Customer in one transaction.
-    // ------------------------------------------------------------
+    // Create User + Customer in a single transaction.
     @Transactional
     public AuthResponse register(RegisterRequest req) {
-        // Bean Validation (@Valid in the controller) has already ensured
-        // every field is present and well-formed by the time we get here.
+        // @Valid in the controller has already checked all the fields.
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new BusinessRuleException("Username already taken");
         }
@@ -67,9 +61,6 @@ public class AuthService {
         return issueTokens(user);
     }
 
-    // ------------------------------------------------------------
-    // Login — verify credentials, issue tokens.
-    // ------------------------------------------------------------
     @Transactional
     public AuthResponse login(LoginRequest req) {
         User user = userRepository.findByUsername(req.getUsername())
@@ -82,9 +73,7 @@ public class AuthService {
         return issueTokens(user);
     }
 
-    // ------------------------------------------------------------
-    // Refresh — rotate the refresh token and mint a new access token.
-    // ------------------------------------------------------------
+    // Rotate the refresh token and mint a new access token.
     @Transactional
     public AuthResponse refresh(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
@@ -100,16 +89,14 @@ public class AuthService {
             throw new UnauthorizedException("Refresh token expired");
         }
 
-        // Rotate: invalidate the presented refresh token before issuing a new pair.
+        // Invalidate the presented refresh token before issuing a new pair.
         User user = stored.getUser();
         refreshTokenRepository.delete(stored);
 
         return issueTokens(user);
     }
 
-    // ------------------------------------------------------------
-    // Logout — revoke one refresh token (or all of a user's tokens).
-    // ------------------------------------------------------------
+    // Revoke a refresh token. No-op if it's missing or already gone.
     @Transactional
     public void logout(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) return;
@@ -117,9 +104,6 @@ public class AuthService {
                 .ifPresent(refreshTokenRepository::delete);
     }
 
-    // ------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------
     private AuthResponse issueTokens(User user) {
         String accessToken = jwtService.issueAccessToken(user);
         String rawRefresh = jwtService.generateRefreshTokenRaw();
@@ -143,7 +127,7 @@ public class AuthService {
                 linkedCustomer == null ? null : linkedCustomer.getName());
     }
 
-    /** SHA-256 hex digest — used to hash refresh tokens before persistence. */
+    /** SHA-256 hex digest. Used to hash refresh tokens before persistence. */
     static String sha256Hex(String raw) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

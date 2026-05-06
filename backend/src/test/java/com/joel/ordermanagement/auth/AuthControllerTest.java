@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Slice tests for {@link AuthController}. Boots only the MVC stack + Jackson +
  * Bean Validation + {@code @RestControllerAdvice}, with the service layer
- * mocked. Security filter chain is disabled here — real 401/403 behaviour is
+ * mocked. Security filter chain is disabled here; real 401/403 behaviour is
  * covered by the integration test.
  */
 @WebMvcTest(controllers = AuthController.class)

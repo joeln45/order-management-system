@@ -11,19 +11,16 @@ import java.math.RoundingMode;
 import java.util.Map;
 
 /**
- * Bootstraps the local product catalogue from the wholesaler's stock service,
- * using {@link WholesalerClient} (WebClient + retries + cache).
- *
- * <p>Only the "drills" category is synced at startup, with a 30 % markup on
- * the wholesale price — the assignment scope. Multi-category sync is a
- * Phase-6+ concern if/when we grow the catalogue.
+ * Pulls the drills catalogue from the wholesaler at startup and copies it
+ * into our products table with a 30% markup on the wholesale price. Only
+ * the drills category is synced; that's all the assignment asks for.
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class WholesalerSyncService {
 
-    /** 30 % markup applied to wholesale price when computing our retail price. */
+    /** 30% markup over wholesale price. */
     private static final BigDecimal MARKUP_MULTIPLIER = new BigDecimal("1.30");
 
     private final WholesalerClient client;
@@ -45,16 +42,12 @@ public class WholesalerSyncService {
                 added++;
             }
         }
-        log.info("Drills sync complete — {} new product(s) added", added);
+        log.info("Drills sync complete: {} new product(s) added", added);
     }
 
-    // ------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------
-
     /**
-     * Pull the wholesaler product id from either the {@code id} field or
-     * the {@code _links.self.href} URL (the wholesaler API has used both shapes).
+     * Pull the wholesaler product id from either the id field or the
+     * _links.self.href URL. The wholesaler API has used both shapes.
      */
     @SuppressWarnings("unchecked")
     private String extractProductId(Map<String, Object> productSummary) {
@@ -95,7 +88,7 @@ public class WholesalerSyncService {
                 .setScale(2, RoundingMode.HALF_UP);
 
         productRepository.save(new Product(description, retailPrice, wholesalerId));
-        log.info("Added '{}' (wholesale £{} → retail £{})", description, wholesalePrice, retailPrice);
+        log.info("Added '{}' (wholesale £{}, retail £{})", description, wholesalePrice, retailPrice);
         return true;
     }
 }

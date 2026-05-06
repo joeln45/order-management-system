@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Unit tests for {@link JwtService}. No Mockito needed — the service has a
+ * Unit tests for {@link JwtService}. No Mockito needed: the service has a
  * plain constructor we can call directly with test values, so each test gets
  * its own fresh instance.
  */
@@ -95,7 +95,7 @@ class JwtServiceTest {
     @Test
     @DisplayName("an expired token fails verification")
     void verify_expiredToken_returnsEmpty() throws InterruptedException {
-        // TTL of 1ms — token is already expired by the time we try to verify it.
+        // TTL of 1ms, so the token is already expired by the time we try to verify it.
         JwtService shortLived = new JwtService(SECRET, ISSUER, Duration.ofMillis(1), REFRESH_TTL);
         String token = shortLived.issueAccessToken(operator);
         Thread.sleep(50);  // ensure wall-clock has moved past expiry
